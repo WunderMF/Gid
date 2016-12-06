@@ -88,38 +88,14 @@ namespace Gideon
                 .Do(async (e) =>
                 {
                     string parameter = e.GetArg("param");
-                    string range_pattern = "^[0-9]*-[0-9]*$";
                     string mult_pattern = "^.*\\*[0-9]*$";
-
+                    string range_pattern = "^[0-9]*-[0-9]*$";
+                    
+                    // Check if a parameter has been supplied
                     if (parameter.Length != 0)
                     {
                         // Split parameter string by spaces
                         List<string> param_list = parameter.Split(' ').ToList<string>();
-
-                        // If the parameter matches the pattern d*-d*
-                        if (Regex.IsMatch(parameter, range_pattern))
-                        {
-                            // Get the lower and upper bound in an array
-                            string[] bounds = parameter.Split('-');
-                            int min = Int32.Parse(bounds[0]);
-                            int max = Int32.Parse(bounds[1]);
-
-                            // Capping the range
-                            if (min >= 0 && max <= 1000000)
-                            {
-                                // Add all the numbers to a list
-                                List<string> nums = new List<string>();
-                                for (int i = min; i < max + 1; ++i) { nums.Add(i.ToString()); }
-                                param_list = nums;
-
-                            } else
-                            {
-                                // Warn and end function if out of range
-                                await e.Channel.SendMessage("```diff\n- Range needs to be between [0 - 1,000,000]\n```");
-                                return;
-                            }
-
-                        }
 
                         // Creates a new parameter list for the changes
                         List<string> new_param = new List<string>();
@@ -127,7 +103,7 @@ namespace Gideon
                         // Iterate through old parameters
                         foreach (string p in param_list)
                         {
-                            // Add multiplied number of instances to new param list
+                            // Check if current parameter is a multiplier
                             if (Regex.IsMatch(p,mult_pattern))
                             {
                                 string[] p_split = p.Split('*');
@@ -139,8 +115,29 @@ namespace Gideon
                                     await e.Channel.SendMessage("```diff\n- Select a multiplier less than 1000\n```");
                                     return;
                                 }
+                            }
 
-                            } else { new_param.Add(p); } // If it's normal, add it normally
+                            // Else check if the parameter matches the pattern d*-d*
+                            else if (Regex.IsMatch(p, range_pattern))
+                            {
+                                // Get the lower and upper bound in an array
+                                string[] bounds = p.Split('-');
+                                int min = Int32.Parse(bounds[0]);
+                                int max = Int32.Parse(bounds[1]);
+
+                                // Capping the range
+                                if (min >= 0 && max <= 1000000) { for (int i = min; i < max + 1; ++i) { new_param.Add(i.ToString()); } }
+                                else
+                                {
+                                    // Warn and end function if out of range
+                                    await e.Channel.SendMessage("```diff\n- Range needs to be between [0 - 1,000,000]\n```");
+                                    return;
+                                }
+
+                            }
+
+                            // Otherwise add it normally
+                            else { new_param.Add(p); } 
                         }
                         
                         string[] parameters = new_param.ToArray();
@@ -152,6 +149,7 @@ namespace Gideon
                         // Calculates probability and converts to % format
                         string percent = ( (double) occurences / parameters.Length ).ToString("#0.######%");
                         await e.Channel.SendMessage("`" + chosen + " [" + percent + "]`");
+                        foreach (var x in parameters) { Console.WriteLine(x);  }
                     }
                     else { await e.Channel.SendMessage("```diff\n- No parameters given\n```"); }
                 });
