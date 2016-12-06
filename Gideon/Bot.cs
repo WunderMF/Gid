@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Configuration;
 using System.Linq;
+using System.Configuration;
+using System.Text.RegularExpressions;
 
 using Discord;
 using Discord.Commands;
-
+using System.Collections.Generic;
 
 namespace Gideon
 
@@ -55,6 +56,12 @@ namespace Gideon
             {
                 await e.Channel.SendMessage("https://github.com/adrianau/Gideon");
             });
+
+            // !test
+            commands.CreateCommand("test").Do(async (e) =>
+            {
+                await e.Channel.SendMessage("`This sends a test message`");
+            });
         }
 
         // !purge
@@ -69,7 +76,7 @@ namespace Gideon
 
                     await e.Channel.DeleteMessages(messages);
                 }
-                else { await e.Channel.SendMessage("You don't have permissions"); }
+                else { await e.Channel.SendMessage("`You don't have permissions`"); }
             });
         }
 
@@ -80,10 +87,42 @@ namespace Gideon
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {
-                    if (e.GetArg("param").Length != 0)
+                    string parameter = e.GetArg("param");
+                    string range_pattern = "^[0-9]*-[0-9]*$";
+
+                    if (parameter.Length != 0)
                     {
                         // Split parameter string by spaces
-                        string[] parameters = e.GetArg("param").Split(' ');
+                        string[] parameters = parameter.Split(' ');
+
+                        // If the parameter matches the pattern d*-d*
+                        if (Regex.IsMatch(parameter, range_pattern))
+                        {
+                            // Get the lower and upper bound in an array
+                            string[] bounds = parameter.Split('-');
+                            int min = Int32.Parse(bounds[0]);
+                            int max = Int32.Parse(bounds[1]);
+
+                            // Capping the range
+                            if (min >= 0 && max <= 1000000)
+                            {
+                                // Add all the numbers to a list
+                                List<string> nums = new List<string>();
+                                for (int i = min; i < max + 1; ++i)
+                                {
+                                    nums.Add(i.ToString());
+                                }
+
+                                parameters = nums.ToArray();
+
+                            } else
+                            {
+                                // Warn and end function if out of range
+                                await e.Channel.SendMessage("```diff\n- Range needs to be between [0 - 1,000,000]\n```");
+                                return;
+                            }
+
+                        }
 
                         // Randoms an index in the string array
                         Random rnd = new Random();
@@ -91,10 +130,10 @@ namespace Gideon
                         int occurences = parameters.Count(str => str.Equals(chosen));
 
                         // Calculates probability and converts to % format
-                        string percent = ((double)occurences / parameters.Length).ToString("#0.##%");
-                        await e.Channel.SendMessage(chosen + " [" + percent + "]");
+                        string percent = ( (double) occurences / parameters.Length ).ToString("#0.######%");
+                        await e.Channel.SendMessage("`" + chosen + " [" + percent + "]`");
                     }
-                    else { await e.Channel.SendMessage("No parameters given"); }
+                    else { await e.Channel.SendMessage("```diff\n- No parameters given\n```"); }
                 });
         }
 
