@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Configuration;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 using Discord;
 using Discord.Commands;
-using System.Collections.Generic;
 
 namespace Gideon
 
@@ -89,11 +89,12 @@ namespace Gideon
                 {
                     string parameter = e.GetArg("param");
                     string range_pattern = "^[0-9]*-[0-9]*$";
+                    string mult_pattern = "^.*\\*[0-9]*$";
 
                     if (parameter.Length != 0)
                     {
                         // Split parameter string by spaces
-                        string[] parameters = parameter.Split(' ');
+                        List<string> param_list = parameter.Split(' ').ToList<string>();
 
                         // If the parameter matches the pattern d*-d*
                         if (Regex.IsMatch(parameter, range_pattern))
@@ -108,12 +109,8 @@ namespace Gideon
                             {
                                 // Add all the numbers to a list
                                 List<string> nums = new List<string>();
-                                for (int i = min; i < max + 1; ++i)
-                                {
-                                    nums.Add(i.ToString());
-                                }
-
-                                parameters = nums.ToArray();
+                                for (int i = min; i < max + 1; ++i) { nums.Add(i.ToString()); }
+                                param_list = nums;
 
                             } else
                             {
@@ -124,6 +121,29 @@ namespace Gideon
 
                         }
 
+                        // Creates a new parameter list for the changes
+                        List<string> new_param = new List<string>();
+
+                        // Iterate through old parameters
+                        foreach (string p in param_list)
+                        {
+                            // Add multiplied number of instances to new param list
+                            if (Regex.IsMatch(p,mult_pattern))
+                            {
+                                string[] p_split = p.Split('*');
+                                int max = Int32.Parse(p_split[1]);
+
+                                // Warn and end function if out of range
+                                if (max < 1000) { for (int i = 0; i < max; ++i) { new_param.Add(p_split[0]); } }
+                                else {
+                                    await e.Channel.SendMessage("```diff\n- Select a multiplier less than 1000\n```");
+                                    return;
+                                }
+
+                            } else { new_param.Add(p); } // If it's normal, add it normally
+                        }
+                        
+                        string[] parameters = new_param.ToArray();
                         // Randoms an index in the string array
                         Random rnd = new Random();
                         string chosen = parameters[rnd.Next(parameters.Length)];
