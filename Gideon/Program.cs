@@ -10,6 +10,7 @@ namespace Gideon
     {
         static void Main(string[] args)
         {
+            Bot gideon = new Bot();
         }
     }
 }
