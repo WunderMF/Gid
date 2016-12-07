@@ -39,6 +39,29 @@ namespace Gideon
             sendMessage();
             purge();
             random();
+            seen();
+
+            // EVENT LISTENERS
+
+            // BM Buster
+            client.MessageDeleted += async (s, e) =>
+            {
+                if (!e.Message.IsAuthor) { await e.Channel.SendMessage(e.User.Name + " deleted: " + e.Message.Text); }
+            };
+
+            // Join & Leave messages
+            client.UserUpdated += async (cl, e) =>
+            {
+                var channel = e.Server.DefaultChannel;
+                if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online") )
+                {
+                    await channel.SendMessage("`" + e.After.Name + " has joined `");
+                }
+                else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
+                {
+                    await channel.SendMessage("`" + e.After.Name + " has left `");
+                }
+            };
 
             // Bot connection
             client.ExecuteAndWait(async () =>
@@ -61,6 +84,7 @@ namespace Gideon
             commands.CreateCommand("test").Do(async (e) =>
             {
                 await e.Channel.SendMessage("`This sends a test message`");
+                await e.Channel.SendMessage(e.User.Status.Value.ToString());
             });
         }
 
@@ -140,7 +164,9 @@ namespace Gideon
                             else { new_param.Add(p); } 
                         }
                         
+                        // Converts the updated param list to array
                         string[] parameters = new_param.ToArray();
+
                         // Randoms an index in the string array
                         Random rnd = new Random();
                         string chosen = parameters[rnd.Next(parameters.Length)];
@@ -149,9 +175,27 @@ namespace Gideon
                         // Calculates probability and converts to % format
                         string percent = ( (double) occurences / parameters.Length ).ToString("#0.######%");
                         await e.Channel.SendMessage("`" + chosen + " [" + percent + "]`");
-                        foreach (var x in parameters) { Console.WriteLine(x);  }
                     }
+
                     else { await e.Channel.SendMessage("```diff\n- No parameters given\n```"); }
+                });
+        }
+
+        // Last seen online -- wont work until bot is always online -- 
+        private void seen()
+        {
+            commands.CreateCommand("seen")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string parameter = e.GetArg("param");
+                    var users = e.Server.Users;
+
+                    foreach (var u in users)
+                    {
+                        if (u.Name.Equals(parameter)) { await e.Channel.SendMessage(u.Name + " last online at: " + u.LastOnlineAt.ToString()); }
+                    }
+                    
                 });
         }
 
