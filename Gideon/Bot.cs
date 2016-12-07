@@ -70,36 +70,31 @@ namespace Gideon
             {
                 var channel = e.Server.DefaultChannel;
                 
-                // Voice channel
-                //var log_channel = e.Server.FindChannels("gideon").FirstOrDefault();
-                if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null)
+                // Voice channel   
+                if (!e.After.IsBot) // Don't notify if it's a bot joining/leaving
                 {
-                    await channel.SendMessage("`" + name(e.After) + " has left " + e.Before.VoiceChannel + "`");
-                }
-                else if (e.Before.VoiceChannel != e.After.VoiceChannel)
-                {
-                    await channel.SendMessage("`" + name(e.After) + " has joined " + e.After.VoiceChannel + "`");
+                    if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null)
+                    {
+                        await channel.SendMessage("`" + name(e.After) + " has left " + e.Before.VoiceChannel + "`");
+                    }
+                    else if (e.Before.VoiceChannel != e.After.VoiceChannel)
+                    {
+                        await channel.SendMessage("`" + name(e.After) + " has joined " + e.After.VoiceChannel + "`");
+                    }
+
+                    // Text channel
+                    if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online"))
+                    {
+                        await channel.SendMessage("`" + name(e.After) + " is now online `");
+                    }
+                    else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
+                    {
+                        await channel.SendMessage("`" + name(e.After) + " is now offline `");
+                    }
                 }
 
-                // Text channel
-                
-                if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online") )
-                {
-                    await channel.SendMessage("`" + name(e.After) + " is now online `");
-                }
-                else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
-                {
-                    await channel.SendMessage("`" + name(e.After) + " is now offline `");
-                }
 
             };
-
-            /* Message updated
-            client.MessageUpdated += async (s, e) =>
-            {
-                await e.Channel.SendMessage(e.Before.Text + ", " + e.After.State.ToString());
-                await e.Channel.SendMessage(e.After.Text + ", " + e.After.State.ToString());
-            }; */
 
             // Bot connection
             client.ExecuteAndWait(async () =>
@@ -350,7 +345,7 @@ namespace Gideon
                 });
         }
 
-        // Last seen online -- wont work until bot is always online -- 
+        // Last seen online -- wont work unless bot is always online -- 
         private void seen()
         {
             commands.CreateCommand("seen")
