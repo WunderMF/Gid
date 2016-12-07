@@ -139,7 +139,8 @@ namespace Gideon
             });
         }
 		
-		private float solve(String function)
+		//Solve a maths problem given as a string
+        private float solve(String function)
         {
             String operations = "-+*/^";
             int total_ops = 0;
@@ -165,7 +166,7 @@ namespace Gideon
             //Base case if function is just a single number
             if (total_ops == 0)
             {
-                return Int32.Parse(function);
+                return float.Parse(function);
             }
             else
             {
@@ -209,17 +210,15 @@ namespace Gideon
             return value * factorial(value - 1);
         }
 
-		// !calculate
         private void calculate()
         {          
             commands.CreateCommand("calculate")
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {              
-                    String function = e.GetArg("param").Trim();
+                    string function = e.GetArg("param").Trim();
 
                     //Work out and replace any factorail terms
-
                     for (int i = 0; i < function.Length; i++)
                     {
                         //Find factorial term
@@ -229,10 +228,17 @@ namespace Gideon
                             String value = "";
 
                             //Get the number to apply factorial to
-                            while ((int)function[j] >= 48 && (int)function[j] <= 57)
+                            while (j < function.Length)
                             {
-                                value += function[j];
-                                j++;                           
+                                if ((int)function[j] >= 48 && (int)function[j] <= 57)
+                                {
+                                    value += function[j];
+                                    j++;
+                                }
+                                else
+                                {
+                                    j = function.Length;
+                                }
                             }
 
                             //Work out factorial and stick it back in the original function 
@@ -241,7 +247,6 @@ namespace Gideon
                     }
 
                     //Print the solved solution
-
                     await e.Channel.SendMessage(solve(function).ToString());
                 });
         }
