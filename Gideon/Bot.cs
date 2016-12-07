@@ -5,15 +5,21 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 using Discord;
+using Discord.Audio;
 using Discord.Commands;
+
+using NAudio.Wave;
+using System.Threading.Tasks;
 
 namespace Gideon
 
 {
     class Bot
     {
-        DiscordClient client;
+        static DiscordClient client;
+        static IAudioClient voiceClient;
         CommandService commands;
+        static bool playingSong = false;
 
         // Constructor
         public Bot()
@@ -35,12 +41,21 @@ namespace Gideon
             // Sets the commands service
             commands = client.GetService<CommandService>();
 
+            // AudioService
+            client.UsingAudio(x =>
+            {
+                x.Mode = AudioMode.Outgoing;
+            });
+
             // Load the commands
             sendMessage();
             purge();
             random();
             seen();
 			calculate();
+            lwiki();
+            playAudio();
+            //voteMute();
 
             // EVENT LISTENERS
 
@@ -51,7 +66,7 @@ namespace Gideon
             }; */
 
             // Join & Leave messages
-            client.UserUpdated += async (cl, e) =>
+            client.UserUpdated += async (s, e) =>
             {
                 var channel = e.Server.DefaultChannel;
                 
@@ -78,6 +93,13 @@ namespace Gideon
                 }
 
             };
+
+            /* Message updated
+            client.MessageUpdated += async (s, e) =>
+            {
+                await e.Channel.SendMessage(e.Before.Text + ", " + e.After.State.ToString());
+                await e.Channel.SendMessage(e.After.Text + ", " + e.After.State.ToString());
+            }; */
 
             // Bot connection
             client.ExecuteAndWait(async () =>
@@ -139,14 +161,14 @@ namespace Gideon
             });
         }
 		
-		//Solve a maths problem given as a string
+		// Solve a maths problem given as a string
         private float solve(String function)
         {
             String operations = "-+*/^";
             int total_ops = 0;
             char operation = ' ';
 
-            //Find the least powerful operator
+            // Find the least powerful operator
             for (int j = 0; j < operations.Length; j++) 
             {
                 for (int i = 0; i < function.Length; i++)
@@ -163,17 +185,17 @@ namespace Gideon
                 }
             }
 
-            //Base case if function is just a single number
+            // Base case if function is just a single number
             if (total_ops == 0)
             {
                 return float.Parse(function);
             }
             else
             {
-                //Split the function into terms
+                // Split the function into terms
                 String[] parameters = function.Split(operation);
 
-                //Apply relevent operator and return value
+                // Apply relevant operator and return value
                 if (operation == '^')
                 {
                     return (float)Math.Pow(solve(parameters[0]),solve(parameters[1]));
@@ -199,7 +221,7 @@ namespace Gideon
             }
         }
 
-        //Return factorial of a number
+        // Return factorial of a number
         private int factorial(int value)
         {
             if (value==1)
@@ -218,16 +240,16 @@ namespace Gideon
                 {              
                     string function = e.GetArg("param").Trim();
 
-                    //Work out and replace any factorail terms
+                    // Work out and replace any factorial terms
                     for (int i = 0; i < function.Length; i++)
                     {
-                        //Find factorial term
+                        // Find factorial term
                         if (function[i] == '!')
                         {
                             int j = i+1;
                             String value = "";
 
-                            //Get the number to apply factorial to
+                            // Get the number to apply factorial to
                             while (j < function.Length)
                             {
                                 if ((int)function[j] >= 48 && (int)function[j] <= 57)
@@ -241,12 +263,12 @@ namespace Gideon
                                 }
                             }
 
-                            //Work out factorial and stick it back in the original function 
+                            // Work out factorial and stick it back in the original function 
                             function = function.Replace("!"+value, factorial(Int32.Parse(value)).ToString());
                         }
                     }
 
-                    //Print the solved solution
+                    // Print the solution
                     await e.Channel.SendMessage(solve(function).ToString());
                 });
         }
@@ -348,6 +370,120 @@ namespace Gideon
 
                 });
         }
+
+        // Returns a page in the League wiki
+        private void lwiki()
+        {
+            commands.CreateCommand("lwiki")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string parameter = e.GetArg("param").ToLower().Replace(' ', '_');
+                    string baseURL = "http://leagueoflegends.wikia.com/wiki/";
+
+                    await e.Channel.SendMessage(baseURL + parameter);
+                });
+        }
+        
+        // Play audio
+        private void playAudio()
+        {
+
+            // Play an audio file
+            commands.CreateCommand("play")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+            {
+                if (e.User.ServerPermissions.Administrator)
+                {
+                    string parameter = e.GetArg("param");
+                    string[] parameters = parameter.Split(' ');
+
+                    // parameters[] split into songname and channel number
+                    string songName = parameters[0];
+                    string channelNumber = "";
+
+                    // If channel number specified, set it -- otherwise default to user one
+                    if (parameters.Length == 2) { channelNumber = parameters[1]; }
+                    else { channelNumber = e.User.VoiceChannel.ToString().Split(' ')[1]; }
+
+                    // Don't run function if song is already playing
+                    if (playingSong == true) return;
+
+                    // Concats channel and its number and finds the Channel object for it
+                    string channelName = "Channel " + channelNumber;
+                    var chan = e.Server.FindChannels(channelName).FirstOrDefault();
+                    
+                    // Concats the filepath and the specified songname
+                    string fileName = songName.ToLower();
+                    string fileURL = @"C:\Users\Adrian\Dropbox\OP.GGT\gideon\" + fileName + ".mp3";
+
+                    // Play the audio
+                    playingSong = true;
+                    await SendAudio(fileURL, chan);
+                    playingSong = false;
+                }
+                else { await e.Channel.SendMessage("`You don't have permissions`"); }
+            });
+
+            // Stop audio from being played
+            commands.CreateCommand("stop")
+                .Do(async (e) =>
+                {
+                    if (e.User.ServerPermissions.Administrator) { playingSong = false; }
+                    else { await e.Channel.SendMessage("`You don't have permissions`"); }
+                });
+        }
+
+        // Sends an audio from filepath over a voice channel
+        // ## Not my code ##
+        public static async Task SendAudio(string filepath, Channel voiceChannel)
+        {
+            // Join the voice channel
+            voiceClient = await client.GetService<AudioService>().Join(voiceChannel);
+
+            try
+            {
+                var channelCount = client.GetService<AudioService>().Config.Channels; // Get the number of AudioChannels our AudioService has been configured to use.
+                var OutFormat = new WaveFormat(48000, 16, channelCount); // Create a new Output Format, using the spec that Discord will accept, and with the number of channels that our client supports.
+
+                using (var MP3Reader = new Mp3FileReader(filepath)) // Create a new Disposable MP3FileReader, to read audio from the filePath parameter
+                using (var resampler = new MediaFoundationResampler(MP3Reader, OutFormat)) // Create a Disposable Resampler, which will convert the read MP3 data to PCM, using our Output Format
+                {
+                    resampler.ResamplerQuality = 60; // Set the quality of the resampler to 60, the highest quality
+                    int blockSize = OutFormat.AverageBytesPerSecond / 50; // Establish the size of our AudioBuffer
+                    byte[] buffer = new byte[blockSize];
+                    int byteCount;
+
+                    // Add in the "&& playingSong" so that it only plays while true. For our cheesy skip command.
+                    while ((byteCount = resampler.Read(buffer, 0, blockSize)) > 0 && playingSong) // Read audio into our buffer, and keep a loop open while data is present
+                    {
+                        if (byteCount < blockSize)
+                        {
+                            // Incomplete Frame
+                            for (int i = byteCount; i < blockSize; i++)
+                                buffer[i] = 0;
+                        }
+
+                        voiceClient.Send(buffer, 0, blockSize); // Send the buffer to Discord
+                    }
+                    await voiceClient.Disconnect();
+                }
+            }
+            catch { System.Console.WriteLine("Something went wrong"); }
+            await voiceClient.Disconnect();
+        }
+
+        /* !votemute
+        private void voteMute()
+        {
+            commands.CreateCommand("votemute")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage("wip");
+                });
+        }*/
 
         // HELPER FUNCTIONS
 
