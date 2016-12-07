@@ -139,15 +139,15 @@ namespace Gideon
             });
         }
 		
-		private int solve(String function)
+		private float solve(String function)
         {
-            String operations = "*/+-";
+            String operations = "-+*/^";
             int total_ops = 0;
-            char operation = '+';
+            char operation = ' ';
 
-            for(int i=0;i<function.Length;i++)
+            for (int j = 0; j < operations.Length; j++) 
             {
-                for (int j = 0; j < operations.Length; j++)
+                for (int i = 0; i < function.Length; i++)
                 {
                     if (function[i] == operations[j])
                     {
@@ -161,46 +161,33 @@ namespace Gideon
                 }
             }
 
-            String[] parameters = function.Split(operation);
-
-            if (total_ops == 1)
+            if (total_ops == 0)
             {
-                if (operation == '*')
-                {
-                    return Int32.Parse(parameters[0]) * Int32.Parse(parameters[1]);
-                }
-                else if (operation == '/')
-                {
-                    return Int32.Parse(parameters[0]) / Int32.Parse(parameters[1]);
-                }
-                else if (operation == '+')
-                {
-                    return Int32.Parse(parameters[0]) + Int32.Parse(parameters[1]);
-                }
-                else if (operation == '-')
-                {
-                    return Int32.Parse(parameters[0]) - Int32.Parse(parameters[1]);
-                }
-
-                return 0;
+                return Int32.Parse(function);
             }
             else
-            {
-                if (operation == '*')
+            { 
+                String[] parameters = function.Split(operation);
+
+                if (operation == '^')
                 {
-                    return Int32.Parse(parameters[0]) * solve(parameters[1]);
+                    return (float)Math.Pow(solve(parameters[0]),solve(parameters[1]));
+                }
+                else if (operation == '*')
+                {
+                    return solve(parameters[0]) * solve(parameters[1]);
                 }
                 else if (operation == '/')
                 {
-                    return Int32.Parse(parameters[0]) / solve(parameters[1]);
+                    return solve(parameters[0]) / solve(parameters[1]);
                 }
                 else if (operation == '+')
                 {
-                    return Int32.Parse(parameters[0]) + solve(parameters[1]);
+                    return solve(parameters[0]) + solve(parameters[1]);
                 }
                 else if (operation == '-')
                 {
-                    return Int32.Parse(parameters[0]) - solve(parameters[1]);
+                    return solve(parameters[0]) - solve(parameters[1]);
                 }
 
                 return 0;
