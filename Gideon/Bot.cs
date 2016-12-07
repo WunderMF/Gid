@@ -52,6 +52,8 @@ namespace Gideon
             // Join & Leave messages
             client.UserUpdated += async (cl, e) =>
             {
+
+                // Text channel
                 var channel = e.Server.DefaultChannel;
                 if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online") )
                 {
@@ -60,6 +62,17 @@ namespace Gideon
                 else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
                 {
                     await channel.SendMessage("`" + e.After.Name + " has left `");
+                }
+
+                // Voice channel
+                //var log_channel = e.Server.FindChannels("gideon").FirstOrDefault();
+                if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null)
+                {
+                    await channel.SendTTSMessage(e.After.Name + " disconnected" );
+                }
+                else if (e.Before.VoiceChannel != e.After.VoiceChannel)
+                {
+                    await channel.SendTTSMessage(e.After.Name + " connected");
                 }
             };
 
@@ -83,8 +96,7 @@ namespace Gideon
             // !test
             commands.CreateCommand("test").Do(async (e) =>
             {
-                await e.Channel.SendMessage("`This sends a test message`");
-                await e.Channel.SendMessage(e.User.Status.Value.ToString());
+                await e.Channel.SendMessage(e.User.VoiceChannel.ToString());
             });
         }
 
