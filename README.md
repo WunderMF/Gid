@@ -10,7 +10,7 @@ A personal Discord bot written in C# using the Discord.NET library.
 ### General
 - `!help` Displays the link to this page.
 - `!random` Randomiser for choosing an item in a list of inputs.
-- `!calculate` will calculate the answer to simple math problems.
+- `!calculate` Will calculate the answer to simple math problems.
 
 ### Admin
 - `!purge` Deletes the last x messages.
