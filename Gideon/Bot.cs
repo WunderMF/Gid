@@ -142,7 +142,7 @@ namespace Gideon
 		//Solve a maths problem given as a string
         private float solve(String function)
         {
-            String operations = "-+*/^";
+            String operations = "+-*/^";
             int total_ops = 0;
             char operation = ' ';
 
