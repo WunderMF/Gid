@@ -145,6 +145,7 @@ namespace Gideon
             int total_ops = 0;
             char operation = ' ';
 
+            //Find the least powerful operator
             for (int j = 0; j < operations.Length; j++) 
             {
                 for (int i = 0; i < function.Length; i++)
@@ -161,14 +162,17 @@ namespace Gideon
                 }
             }
 
+            //Base case if function is just a single number
             if (total_ops == 0)
             {
                 return Int32.Parse(function);
             }
             else
-            { 
+            {
+                //Split the function into terms
                 String[] parameters = function.Split(operation);
 
+                //Apply relevent operator and return value
                 if (operation == '^')
                 {
                     return (float)Math.Pow(solve(parameters[0]),solve(parameters[1]));
@@ -194,6 +198,18 @@ namespace Gideon
             }
         }
 
+        //Return factorial of a number
+        private int factorial(int value)
+        {
+            if (value==1)
+            {
+                return 1;
+            }
+
+            return value * factorial(value - 1);
+        }
+
+		// !calculate
         private void calculate()
         {          
             commands.CreateCommand("calculate")
@@ -201,6 +217,30 @@ namespace Gideon
                 .Do(async (e) =>
                 {              
                     String function = e.GetArg("param").Trim();
+
+                    //Work out and replace any factorail terms
+
+                    for (int i = 0; i < function.Length; i++)
+                    {
+                        //Find factorial term
+                        if (function[i] == '!')
+                        {
+                            int j = i+1;
+                            String value = "";
+
+                            //Get the number to apply factorial to
+                            while ((int)function[j] >= 48 && (int)function[j] <= 57)
+                            {
+                                value += function[j];
+                                j++;                           
+                            }
+
+                            //Work out factorial and stick it back in the original function 
+                            function = function.Replace("!"+value, factorial(Int32.Parse(value)).ToString());
+                        }
+                    }
+
+                    //Print the solved solution
 
                     await e.Channel.SendMessage(solve(function).ToString());
                 });
