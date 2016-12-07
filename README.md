@@ -2,21 +2,28 @@
 A personal Discord bot written in C# using the Discord.NET library.
 
 ## Features
-- Notifies when someone comes online or leaves the Discord channel
-- Notifies when someone connects or disconnects from the voice channel
+- Notifies when someone comes online or goes offline.
+- Notifies when someone connects or disconnects from a voice channel.
 
 ## Commands
 
 ### General
 - `!help` Displays the link to this page.
-- `!random` Randomly chooses between a list of things separated by spaces.
-
-#### !Random examples
-!random supports [x-y] ranges and multipliers for generating a list to choose from.
-- `!random this that`: [this, that]
-- `!random 1-5`: [1,2,3,4,5]
-- `!random apple*2 banana`: [apple, apple, banana]
-- `!random this 1-5 apple*2`: [this,1,2,3,4,5,apple,apple]
+- `!random` Randomiser for choosing an item in a list of inputs.
 
 ### Admin
 - `!purge` Deletes the last x messages.
+
+## Examples
+
+### !Random
+Supports numerical ranges [0 - 1 million] and multipliers to generate lists to random a value from:
+- `!random a b` | [a, b]
+- `!random 1-5` | [1, 2, 3, 4, 5]
+- `!random a*2 b` | [a, a, b]
+- `!random 1-5 apple*2` | [1, 2, 3, 4, 5, a, a]
+
+### !Purge
+Purging offers only the basic functionality for deleting messages at the moment:
+- `!purge 5` Downloads the last 5 messages and deletes them.
+- `!purge 10 cat` Downloads the last 10 messages and deletes any with the word "cat".

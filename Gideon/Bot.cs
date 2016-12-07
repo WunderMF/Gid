@@ -43,37 +43,39 @@ namespace Gideon
 
             // EVENT LISTENERS
 
-            // BM Buster
+            /* BM Buster
             client.MessageDeleted += async (s, e) =>
             {
                 if (!e.Message.IsAuthor) { await e.Channel.SendMessage(e.User.Name + " deleted: " + e.Message.Text); }
-            };
+            }; */
 
             // Join & Leave messages
             client.UserUpdated += async (cl, e) =>
             {
-
-                // Text channel
                 var channel = e.Server.DefaultChannel;
-                if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online") )
-                {
-                    await channel.SendMessage("`" + e.After.Name + " has joined `");
-                }
-                else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
-                {
-                    await channel.SendMessage("`" + e.After.Name + " has left `");
-                }
-
+                
                 // Voice channel
                 //var log_channel = e.Server.FindChannels("gideon").FirstOrDefault();
                 if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null)
                 {
-                    await channel.SendTTSMessage(e.After.Name + " disconnected" );
+                    await channel.SendMessage("`" + name(e.After) + " has left " + e.Before.VoiceChannel + "`");
                 }
                 else if (e.Before.VoiceChannel != e.After.VoiceChannel)
                 {
-                    await channel.SendTTSMessage(e.After.Name + " connected");
+                    await channel.SendMessage("`" + name(e.After) + " has joined " + e.After.VoiceChannel + "`");
                 }
+
+                // Text channel
+                
+                if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online") )
+                {
+                    await channel.SendMessage("`" + name(e.After) + " is now online `");
+                }
+                else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
+                {
+                    await channel.SendMessage("`" + name(e.After) + " is now offline `");
+                }
+
             };
 
             // Bot connection
@@ -93,24 +95,44 @@ namespace Gideon
                 await e.Channel.SendMessage("https://github.com/adrianau/Gideon");
             });
 
-            // !test
-            commands.CreateCommand("test").Do(async (e) =>
-            {
-                await e.Channel.SendMessage(e.User.VoiceChannel.ToString());
-            });
         }
 
         // !purge
         private void purge()
         {
-            commands.CreateCommand("purge").Do(async (e) =>
+            commands.CreateCommand("purge")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
             {
                 if (e.User.ServerPermissions.Administrator)
                 {
-                    Message[] messages;
-                    messages = await e.Channel.DownloadMessages(6);
+                    string parameter = e.GetArg("param");
+                    string[] parameters = parameter.Split(' ');
 
-                    await e.Channel.DeleteMessages(messages);
+                    // Download x number of messages
+                    Message[] dl_msgs = await e.Channel.DownloadMessages(Int32.Parse(parameters[0]) + 1 );
+                    List<Message> messages = new List<Message>();
+
+                    // If a parameter has been supplied
+                    if (parameter.Length != 0)
+                    {
+                        
+                        // If a filter has been supplied
+                        if (parameters.Length == 2)
+                        {
+                            foreach (var m in dl_msgs)
+                            {
+                                if (m.Text.Contains(parameters[1])) { messages.Add(m); }
+                            }
+                        }
+
+                        // Otherwise just add all of them to delete
+                        else { foreach (var m in dl_msgs) { messages.Add(m); } }
+
+                    }
+                    
+                    // Delete the messages
+                    await e.Channel.DeleteMessages(messages.ToArray());
                 }
                 else { await e.Channel.SendMessage("`You don't have permissions`"); }
             });
@@ -200,15 +222,27 @@ namespace Gideon
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {
-                    string parameter = e.GetArg("param");
+                    string parameter = e.GetArg("param").ToLower();
                     var users = e.Server.Users;
 
-                    foreach (var u in users)
-                    {
-                        if (u.Name.Equals(parameter)) { await e.Channel.SendMessage(u.Name + " last online at: " + u.LastOnlineAt.ToString()); }
-                    }
-                    
+                    // Search through all users on server
+                    User found = null;
+                    foreach (var u in users) { if (u.Name.ToLower().Equals(parameter)) { found = u; } }
+
+                    // Send the resulting message
+                    if (found != null) { await e.Channel.SendMessage( name(found) + " was last online at: " + found.LastOnlineAt.ToString()); }
+                    else { await e.Channel.SendMessage("```diff\n- User not found\n```"); }
+
                 });
+        }
+
+        // HELPER FUNCTIONS
+
+        // Returns nickname if available
+        private string name(User user)
+        {
+            if (user.Nickname != null) { return user.Nickname; }
+            else { return user.Name; }
         }
 
         // Log to console
