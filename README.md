@@ -10,7 +10,7 @@ A personal Discord bot written in C# using the Discord.NET library.
 ### General
 - `!help` Displays the link to this page.
 - `!random` Randomiser for choosing an item in a list of inputs.
-- `!calculate' will calculate the answer to simple math problems.
+- `!calculate` will calculate the answer to simple math problems.
 
 ### Admin
 - `!purge` Deletes the last x messages.
@@ -22,7 +22,7 @@ Supports numerical ranges [0 - 1 million] and multipliers to generate lists to r
 - `!random a b` | [a, b]
 - `!random 1-5` | [1, 2, 3, 4, 5]
 - `!random a*2 b` | [a, a, b]
-- `!random 1-5 apple*2` | [1, 2, 3, 4, 5, a, a]
+- `!random 1-5 a*2` | [1, 2, 3, 4, 5, a, a]
 
 ### !Purge
 Purging offers only the basic functionality for deleting messages at the moment:
@@ -30,7 +30,7 @@ Purging offers only the basic functionality for deleting messages at the moment:
 - `!purge 10 cat` Downloads the last 10 messages and deletes any with the word "cat".
 
 ### !Calculate
-Calculate will follow bidmas and supports these operations:
+Calculate will follow "bidmas" and supports these operations:
 - `!calculate !5` | 120 
 - `!calculate 5-5` | 0
 - `!calculate 5+5` | 10
