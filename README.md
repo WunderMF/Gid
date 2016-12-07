@@ -36,4 +36,6 @@ Calculate will follow "bidmas" and supports these operations:
 - `!calculate 5+5` | 10
 - `!calculate 5/5` | 1
 - `!calculate 5*5` | 25
-- `!calculate 5^5` | 3240 
+- `!calculate 5^5` | 3125
+- `!calculate !5-5+5/5*5^5` | 3240
+ 
