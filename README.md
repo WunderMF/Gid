@@ -27,3 +27,12 @@ Supports numerical ranges [0 - 1 million] and multipliers to generate lists to r
 Purging offers only the basic functionality for deleting messages at the moment:
 - `!purge 5` Downloads the last 5 messages and deletes them.
 - `!purge 10 cat` Downloads the last 10 messages and deletes any with the word "cat".
+
+### !Calculate
+Calculate will return the answer to simple math problems, supported functionality includes:
+- `!calculate !1` 
+- `!calculate 1-1` 
+- `!calculate 1+1` 
+- `!calculate 1/1` 
+- `!calculate 1*1` 
+- `!calculate 1^1` 
