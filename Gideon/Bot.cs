@@ -40,6 +40,7 @@ namespace Gideon
             purge();
             random();
             seen();
+			calculate();
 
             // EVENT LISTENERS
 
@@ -136,6 +137,86 @@ namespace Gideon
                 }
                 else { await e.Channel.SendMessage("`You don't have permissions`"); }
             });
+        }
+		
+		private int solve(String function)
+        {
+            String operations = "*/+-";
+            int total_ops = 0;
+            char operation = '+';
+
+            for(int i=0;i<function.Length;i++)
+            {
+                for (int j = 0; j < operations.Length; j++)
+                {
+                    if (function[i] == operations[j])
+                    {
+                        total_ops++;
+
+                        if (total_ops == 1)
+                        {
+                            operation = function[i];
+                        }
+                    }
+                }
+            }
+
+            String[] parameters = function.Split(operation);
+
+            if (total_ops == 1)
+            {
+                if (operation == '*')
+                {
+                    return Int32.Parse(parameters[0]) * Int32.Parse(parameters[1]);
+                }
+                else if (operation == '/')
+                {
+                    return Int32.Parse(parameters[0]) / Int32.Parse(parameters[1]);
+                }
+                else if (operation == '+')
+                {
+                    return Int32.Parse(parameters[0]) + Int32.Parse(parameters[1]);
+                }
+                else if (operation == '-')
+                {
+                    return Int32.Parse(parameters[0]) - Int32.Parse(parameters[1]);
+                }
+
+                return 0;
+            }
+            else
+            {
+                if (operation == '*')
+                {
+                    return Int32.Parse(parameters[0]) * solve(parameters[1]);
+                }
+                else if (operation == '/')
+                {
+                    return Int32.Parse(parameters[0]) / solve(parameters[1]);
+                }
+                else if (operation == '+')
+                {
+                    return Int32.Parse(parameters[0]) + solve(parameters[1]);
+                }
+                else if (operation == '-')
+                {
+                    return Int32.Parse(parameters[0]) - solve(parameters[1]);
+                }
+
+                return 0;
+            }
+        }
+
+        private void calculate()
+        {          
+            commands.CreateCommand("calculate")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {              
+                    String function = e.GetArg("param").Trim();
+
+                    await e.Channel.SendMessage(solve(function).ToString());
+                });
         }
 
         // !random
