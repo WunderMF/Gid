@@ -188,7 +188,7 @@ namespace Gideon
             else
             {
                 // Split the function into terms
-                String[] parameters = function.Split(operation);
+                String[] parameters = function.Split(new char[] { operation }, 2);
 
                 // Apply relevant operator and return value
                 if (operation == '^')
