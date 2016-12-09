@@ -156,14 +156,14 @@ namespace Gideon
             });
         }
 		
-		// Solve a maths problem given as a string
+		//Solve a maths problem given as a string
         private float solve(String function)
-        {
+        {            
             String operations = "+-*/^";
             int total_ops = 0;
             char operation = ' ';
 
-            // Find the least powerful operator
+            //Find the least powerful operator
             for (int j = 0; j < operations.Length; j++) 
             {
                 for (int i = 0; i < function.Length; i++)
@@ -178,19 +178,21 @@ namespace Gideon
                         }
                     }
                 }
-            }
+            }    
 
-            // Base case if function is just a single number
+            //Base case if function is just a single number
             if (total_ops == 0)
             {
                 return float.Parse(function);
             }
             else
             {
-                // Split the function into terms
+                //Split the function into terms      
                 String[] parameters = function.Split(new char[] { operation }, 2);
 
-                // Apply relevant operator and return value
+                Console.WriteLine(parameters[0] +" "+ parameters[1]);
+
+                //Apply relevent operator and return value
                 if (operation == '^')
                 {
                     return (float)Math.Pow(solve(parameters[0]),solve(parameters[1]));
@@ -216,7 +218,7 @@ namespace Gideon
             }
         }
 
-        // Return factorial of a number
+        //Return factorial of a number
         private int factorial(int value)
         {
             if (value==1)
@@ -235,16 +237,16 @@ namespace Gideon
                 {              
                     string function = e.GetArg("param").Trim();
 
-                    // Work out and replace any factorial terms
+                    //Work out and replace any factorail terms
                     for (int i = 0; i < function.Length; i++)
                     {
-                        // Find factorial term
+                        //Find factorial term
                         if (function[i] == '!')
                         {
                             int j = i+1;
                             String value = "";
 
-                            // Get the number to apply factorial to
+                            //Get the number to apply factorial to
                             while (j < function.Length)
                             {
                                 if ((int)function[j] >= 48 && (int)function[j] <= 57)
@@ -258,12 +260,12 @@ namespace Gideon
                                 }
                             }
 
-                            // Work out factorial and stick it back in the original function 
+                            //Work out factorial and stick it back in the original function 
                             function = function.Replace("!"+value, factorial(Int32.Parse(value)).ToString());
                         }
                     }
 
-                    // Print the solution
+                    //Print the solved solution                  
                     await e.Channel.SendMessage(solve(function).ToString());
                 });
         }
