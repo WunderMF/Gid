@@ -156,39 +156,51 @@ namespace Gideon
             });
         }
 		
-		//Solve a maths problem given as a string
+        //Solve a maths problem given as a string
         private float solve(String function)
-        {            
+        {
             String operations = "+-*/^";
             int total_ops = 0;
             char operation = ' ';
 
+            Console.WriteLine(function);
             //Find the least powerful operator
-            for (int j = 0; j < operations.Length; j++) 
+            for (int j = 0; j < operations.Length; j++)
             {
                 for (int i = 0; i < function.Length; i++)
                 {
                     if (function[i] == operations[j])
                     {
-                        total_ops++;
-
-                        if (total_ops == 1)
+						//Checks to do with a sign associated with a value i.e. -4
+                        if (!((function[i] == '+' || function[i] == '-') && i == 0))
                         {
-                            operation = function[i];
+                            if ((int)function[i - 1] >= 48 && (int)function[i - 1] <= 57)
+                            { 
+                                total_ops++;
+
+                                if (total_ops == 1)
+                                {
+                                    operation = function[i];
+                                }
+                            }
                         }
                     }
                 }
-            }    
+            }
+            Console.WriteLine(function);
 
             //Base case if function is just a single number
             if (total_ops == 0)
             {
+                //Console.WriteLine(float.Parse(function));
                 return float.Parse(function);
             }
             else
             {
                 //Split the function into terms      
                 String[] parameters = function.Split(new char[] { operation }, 2);
+
+                //Console.WriteLine(parameters[0] + " " + parameters[1]);
 
                 //Apply relevent operator and return value
                 if (operation == '^')
@@ -227,7 +239,6 @@ namespace Gideon
             return value * factorial(value - 1);
         }
 
-		//Work out and return factorials in a function
         private string get_factorial(string function)
         {
             //Work out and replace any factorail terms
@@ -261,7 +272,6 @@ namespace Gideon
             return function;
         }
 
-		//Solve a bracketed problem
         private string solve_brackets(string function)
         {
             int check = 0;
@@ -327,10 +337,9 @@ namespace Gideon
             return solve(new_function).ToString();
         }
 
-		// !calculate
         private void calculate()
         {          
-            commands.CreateCommand("cal")
+            commands.CreateCommand("calculate")
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {              
