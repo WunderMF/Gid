@@ -243,25 +243,27 @@ namespace Gideon
                         //Find factorial term
                         if (function[i] == '!')
                         {
-                            int j = i+1;
-                            String value = "";
+                            int j = i-1;
+                            string value ="";
 
                             //Get the number to apply factorial to
-                            while (j < function.Length)
+                            while (j >= 0)
                             {
+                                Console.WriteLine(function[j]);
+
                                 if ((int)function[j] >= 48 && (int)function[j] <= 57)
                                 {
-                                    value += function[j];
-                                    j++;
+                                    value = function[j] + value;
+                                    j--;
                                 }
                                 else
                                 {
-                                    j = function.Length;
+                                    j = -1;
                                 }
                             }
-
+                          
                             //Work out factorial and stick it back in the original function 
-                            function = function.Replace("!"+value, factorial(Int32.Parse(value)).ToString());
+                            function = function.Replace(value+ "!", factorial(Int32.Parse(value)).ToString());
                         }
                     }
 
