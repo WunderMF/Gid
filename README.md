@@ -21,13 +21,14 @@ Purging offers only the basic functionality for deleting messages at the moment.
 
 ### Calculate
 Calculate will follow "bidmas" and supports these operations:
-- `!calculate 5!` | 120 
-- `!calculate 5-5` | 0
-- `!calculate 5+5` | 10
-- `!calculate 5/5` | 1
-- `!calculate 5*5` | 25
-- `!calculate 5^5` | 3125
-- `!calculate 5!-5+5/5*5^5` | 3240
+- `!cal 5!` | 120 
+- `!cal 5-5` | 0
+- `!cal 5+5` | 10
+- `!cal 5/5` | 1
+- `!cal 5*5` | 25
+- `!cal 5^5` | 3125
+- `!cal 5!-5+5/5*5^5` | 3240
+- `!cal (5+5)*5` | 50
 
 ### LWiki (WIP)
 Returns a page from the League of Legends Wikia:

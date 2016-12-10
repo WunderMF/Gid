@@ -190,8 +190,6 @@ namespace Gideon
                 //Split the function into terms      
                 String[] parameters = function.Split(new char[] { operation }, 2);
 
-                Console.WriteLine(parameters[0] +" "+ parameters[1]);
-
                 //Apply relevent operator and return value
                 if (operation == '^')
                 {
@@ -221,7 +219,7 @@ namespace Gideon
         //Return factorial of a number
         private int factorial(int value)
         {
-            if (value==1)
+            if (value<2)
             {
                 return 1;
             }
@@ -229,46 +227,120 @@ namespace Gideon
             return value * factorial(value - 1);
         }
 
+		//Work out and return factorials in a function
+        private string get_factorial(string function)
+        {
+            //Work out and replace any factorail terms
+            for (int i = 0; i < function.Length; i++)
+            {
+                //Find factorial term
+                if (function[i] == '!')
+                {
+                    int j = i - 1;
+                    string value = "";
+
+                    //Get the number to apply factorial to
+                    while (j >= 0)
+                    {
+                        if ((int)function[j] >= 48 && (int)function[j] <= 57)
+                        {
+                            value = function[j] + value;
+                            j--;
+                        }
+                        else
+                        {
+                            j = -1;
+                        }
+                    }
+
+                    //Work out factorial and stick it back in the original function 
+                    function = function.Replace(value + "!", factorial(Int32.Parse(value)).ToString());
+                }
+            }
+
+            return function;
+        }
+
+		//Solve a bracketed problem
+        private string solve_brackets(string function)
+        {
+            int check = 0;
+            bool write = false;
+            string sub_function = "";
+            string new_function = function;
+
+            //Loop through input function
+            for (int i = 0; i < function.Length; i++)
+            {
+                //Incorrect syntax check
+                if (check < 0)
+                {
+                    i = function.Length;                   
+                }
+                else
+                {
+                    //Search for close brackets
+                    if (function[i] == ')')
+                    {
+                        check--;
+
+                        //If the bracket is the end of current pair
+                        if (check == 0)
+                        {
+                            write = false;
+
+                            //Replace the bracket pair with the solution to the pair
+                            new_function = new_function.Replace('(' + sub_function + ')', solve_brackets(sub_function));
+
+                            sub_function = "";
+                        }
+                    }
+
+                    //Add characters to the sub function bracket pair
+                    if (write)
+                    {
+                        sub_function += function[i];
+                    }
+
+                    //Check for open bracket
+                    if (function[i] == '(')
+                    {
+                        check++;
+
+                        //Start bracket pair
+                        if (check == 1)
+                        {
+                            write = true;
+                        }
+                    }
+                }
+            }
+
+            //Error in syntax
+            if (check != 0)
+            {
+                Console.WriteLine("Incorrect Syntax");
+                return "";
+            }
+
+            //Return solution
+            return solve(new_function).ToString();
+        }
+
+		// !calculate
         private void calculate()
         {          
-            commands.CreateCommand("calculate")
+            commands.CreateCommand("cal")
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {              
                     string function = e.GetArg("param").Trim();
 
-                    //Work out and replace any factorail terms
-                    for (int i = 0; i < function.Length; i++)
-                    {
-                        //Find factorial term
-                        if (function[i] == '!')
-                        {
-                            int j = i-1;
-                            string value ="";
-
-                            //Get the number to apply factorial to
-                            while (j >= 0)
-                            {
-                                Console.WriteLine(function[j]);
-
-                                if ((int)function[j] >= 48 && (int)function[j] <= 57)
-                                {
-                                    value = function[j] + value;
-                                    j--;
-                                }
-                                else
-                                {
-                                    j = -1;
-                                }
-                            }
-                          
-                            //Work out factorial and stick it back in the original function 
-                            function = function.Replace(value+ "!", factorial(Int32.Parse(value)).ToString());
-                        }
-                    }
+                    //Replace factorial terms 
+                    function = get_factorial(function);
 
                     //Print the solved solution                  
-                    await e.Channel.SendMessage(solve(function).ToString());
+                    await e.Channel.SendMessage(solve_brackets(function));
                 });
         }
 
