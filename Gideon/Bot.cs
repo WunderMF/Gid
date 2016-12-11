@@ -10,6 +10,7 @@ using Discord.Commands;
 
 using NAudio.Wave;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Gideon
 
@@ -17,9 +18,11 @@ namespace Gideon
     class Bot
     {
         static DiscordClient client;
+        static CommandService commands;
         static IAudioClient voiceClient;
-        CommandService commands;
         static bool playingSong = false;
+
+        static string lastOnline;
 
         // Constructor
         public Bot()
@@ -42,10 +45,11 @@ namespace Gideon
             commands = client.GetService<CommandService>();
 
             // AudioService
-            client.UsingAudio(x =>
-            {
-                x.Mode = AudioMode.Outgoing;
-            });
+            client.UsingAudio(x => { x.Mode = AudioMode.Outgoing; });
+
+            // Last online
+            lastOnline = System.IO.Directory.GetCurrentDirectory() + "\\last_online.txt";
+            if (!File.Exists(lastOnline)){ using (File.Create(lastOnline)) { } ; }
 
             // Load the commands
             sendMessage();
@@ -54,45 +58,32 @@ namespace Gideon
             seen();
 			calculate();
             lwiki();
-            playAudio();
-            //voteMute();
-
-            // EVENT LISTENERS
-
-            /* BM Buster
-            client.MessageDeleted += async (s, e) =>
-            {
-                if (!e.Message.IsAuthor) { await e.Channel.SendMessage(e.User.Name + " deleted: " + e.Message.Text); }
-            }; */
+            //playAudio();
 
             // Join & Leave messages
             client.UserUpdated += async (s, e) =>
             {
                 var channel = e.Server.DefaultChannel;
                 
-                // Voice channel   
                 if (!e.After.IsBot) // Don't notify if it's a bot joining/leaving
                 {
-                    if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null)
-                    {
+                    // Voice channel
+                    if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null) {
                         await channel.SendMessage("`" + name(e.After) + " has left " + e.Before.VoiceChannel + "`");
                     }
-                    else if (e.Before.VoiceChannel != e.After.VoiceChannel)
-                    {
+                    else if (e.Before.VoiceChannel != e.After.VoiceChannel) {
                         await channel.SendMessage("`" + name(e.After) + " has joined " + e.After.VoiceChannel + "`");
                     }
 
                     // Text channel
-                    if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online"))
-                    {
+                    if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online")) {
                         await channel.SendMessage("`" + name(e.After) + " is now online `");
                     }
-                    else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
-                    {
+                    else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline")) {
                         await channel.SendMessage("`" + name(e.After) + " is now offline `");
+                        updateSeen(e.After);
                     }
                 }
-
 
             };
 
@@ -107,7 +98,7 @@ namespace Gideon
         // Commands that only needs a reply message
         private void sendMessage()
         {
-            // !help
+            // Displays help message
             commands.CreateCommand("help").Do(async (e) =>
             {
                 await e.Channel.SendMessage("https://github.com/adrianau/Gideon");
@@ -115,15 +106,12 @@ namespace Gideon
 
         }
 
-        // !purge
-        private void purge()
-        {
+        // Deletes messages
+        private void purge() {
             commands.CreateCommand("purge")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-            {
-                if (e.User.ServerPermissions.Administrator)
-                {
+            .Parameter("param", ParameterType.Unparsed)
+            .Do(async (e) => {
+                if (e.User.ServerPermissions.Administrator) {
                     string parameter = e.GetArg("param");
                     string[] parameters = parameter.Split(' ');
 
@@ -131,15 +119,11 @@ namespace Gideon
                     Message[] dl_msgs = await e.Channel.DownloadMessages(Int32.Parse(parameters[0]) + 1 );
                     List<Message> messages = new List<Message>();
 
-                    // If a parameter has been supplied
-                    if (parameter.Length != 0)
-                    {
+                    if (parameter.Length != 0) { // If a parameter has been supplied
                         
                         // If a filter has been supplied
-                        if (parameters.Length == 2)
-                        {
-                            foreach (var m in dl_msgs)
-                            {
+                        if (parameters.Length == 2) {
+                            foreach (var m in dl_msgs) {
                                 if (m.Text.Contains(parameters[1])) { messages.Add(m); }
                             }
                         }
@@ -156,22 +140,21 @@ namespace Gideon
             });
         }
 		
-        //Solve a maths problem given as a string
+        // Solve a maths problem given as a string
         private float solve(String function)
         {
             String operations = "+-*/^";
             int total_ops = 0;
             char operation = ' ';
 
-            Console.WriteLine(function);
-            //Find the least powerful operator
+            // Find the least powerful operator
             for (int j = 0; j < operations.Length; j++)
             {
                 for (int i = 0; i < function.Length; i++)
                 {
                     if (function[i] == operations[j])
                     {
-						//Checks to do with a sign associated with a value i.e. -4
+						// Checks to do with a sign associated with a value i.e. -4
                         if (!((function[i] == '+' || function[i] == '-') && i == 0))
                         {
                             if ((int)function[i - 1] >= 48 && (int)function[i - 1] <= 57)
@@ -187,22 +170,21 @@ namespace Gideon
                     }
                 }
             }
-            Console.WriteLine(function);
 
-            //Base case if function is just a single number
+            // Base case if function is just a single number
             if (total_ops == 0)
             {
-                //Console.WriteLine(float.Parse(function));
+                // Console.WriteLine(float.Parse(function));
                 return float.Parse(function);
             }
             else
             {
-                //Split the function into terms      
+                // Split the function into terms      
                 String[] parameters = function.Split(new char[] { operation }, 2);
 
-                //Console.WriteLine(parameters[0] + " " + parameters[1]);
+                // Console.WriteLine(parameters[0] + " " + parameters[1]);
 
-                //Apply relevent operator and return value
+                // Apply relevent operator and return value
                 if (operation == '^')
                 {
                     return (float)Math.Pow(solve(parameters[0]),solve(parameters[1]));
@@ -228,7 +210,7 @@ namespace Gideon
             }
         }
 
-        //Return factorial of a number
+        // Return factorial of a number
         private int factorial(int value)
         {
             if (value<2)
@@ -241,16 +223,16 @@ namespace Gideon
 
         private string get_factorial(string function)
         {
-            //Work out and replace any factorail terms
+            // Work out and replace any factorail terms
             for (int i = 0; i < function.Length; i++)
             {
-                //Find factorial term
+                // Find factorial term
                 if (function[i] == '!')
                 {
                     int j = i - 1;
                     string value = "";
 
-                    //Get the number to apply factorial to
+                    // Get the number to apply factorial to
                     while (j >= 0)
                     {
                         if ((int)function[j] >= 48 && (int)function[j] <= 57)
@@ -264,7 +246,7 @@ namespace Gideon
                         }
                     }
 
-                    //Work out factorial and stick it back in the original function 
+                    // Work out factorial and stick it back in the original function 
                     function = function.Replace(value + "!", factorial(Int32.Parse(value)).ToString());
                 }
             }
@@ -279,45 +261,45 @@ namespace Gideon
             string sub_function = "";
             string new_function = function;
 
-            //Loop through input function
+            // Loop through input function
             for (int i = 0; i < function.Length; i++)
             {
-                //Incorrect syntax check
+                // Incorrect syntax check
                 if (check < 0)
                 {
                     i = function.Length;                   
                 }
                 else
                 {
-                    //Search for close brackets
+                    // Search for close brackets
                     if (function[i] == ')')
                     {
                         check--;
 
-                        //If the bracket is the end of current pair
+                        // If the bracket is the end of current pair
                         if (check == 0)
                         {
                             write = false;
 
-                            //Replace the bracket pair with the solution to the pair
+                            // Replace the bracket pair with the solution to the pair
                             new_function = new_function.Replace('(' + sub_function + ')', solve_brackets(sub_function));
 
                             sub_function = "";
                         }
                     }
 
-                    //Add characters to the sub function bracket pair
+                    // Add characters to the sub function bracket pair
                     if (write)
                     {
                         sub_function += function[i];
                     }
 
-                    //Check for open bracket
+                    // Check for open bracket
                     if (function[i] == '(')
                     {
                         check++;
 
-                        //Start bracket pair
+                        // Start bracket pair
                         if (check == 1)
                         {
                             write = true;
@@ -326,14 +308,14 @@ namespace Gideon
                 }
             }
 
-            //Error in syntax
+            // Error in syntax
             if (check != 0)
             {
                 Console.WriteLine("Incorrect Syntax");
                 return "";
             }
 
-            //Return solution
+            // Return solution
             return solve(new_function).ToString();
         }
 
@@ -345,110 +327,82 @@ namespace Gideon
                 {              
                     string function = e.GetArg("param").Trim();
 
-                    //Replace factorial terms 
+                    // Replace factorial terms 
                     function = get_factorial(function);
 
-                    //Print the solved solution                  
+                    // Print the solved solution                  
                     await e.Channel.SendMessage(solve_brackets(function));
                 });
         }
 
-        // !random
-        private void random()
-        {
+        // Randoms a value from a list
+        private void random(){
             commands.CreateCommand("random")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-                {
-                    string parameter = e.GetArg("param");
-                    string mult_pattern = "^.*\\*[0-9]*$";
-                    string range_pattern = "^[0-9]*-[0-9]*$";
+            .Parameter("param", ParameterType.Unparsed)
+            .Do(async (e) =>{
+                string parameter = e.GetArg("param");
+                string mult_pattern = "^.*\\*[0-9]*$";
+                string range_pattern = "^[0-9]*-[0-9]*$";
                     
-                    // Check if a parameter has been supplied
-                    if (parameter.Length != 0)
-                    {
-                        // Split parameter string by spaces
-                        List<string> param_list = parameter.Split(' ').ToList<string>();
+                // Check if a parameter has been supplied
+                if (parameter.Length != 0) {
+                    // Split parameter string by spaces
+                    List<string> param_list = parameter.Split(' ').ToList<string>();
 
-                        // Creates a new parameter list for the changes
-                        List<string> new_param = new List<string>();
+                    // Creates a new parameter list for the changes
+                    List<string> new_param = new List<string>();
 
-                        // Iterate through old parameters
-                        foreach (string p in param_list)
-                        {
-                            // Check if current parameter is a multiplier
-                            if (Regex.IsMatch(p,mult_pattern))
-                            {
-                                string[] p_split = p.Split('*');
-                                int max = Int32.Parse(p_split[1]);
+                    // Iterate through old parameters
+                    foreach (string p in param_list) {
+                        // Check if current parameter is a multiplier
+                        if (Regex.IsMatch(p,mult_pattern)) {
+                            string[] p_split = p.Split('*');
+                            int max = Int32.Parse(p_split[1]);
 
-                                // Warn and end function if out of range
-                                if (max < 1000) { for (int i = 0; i < max; ++i) { new_param.Add(p_split[0]); } }
-                                else {
-                                    await e.Channel.SendMessage("```diff\n- Select a multiplier less than 1000\n```");
-                                    return;
-                                }
+                            // Warn and end function if out of range
+                            if (max < 1000) { for (int i = 0; i < max; ++i) { new_param.Add(p_split[0]); } }
+                            else {
+                                await e.Channel.SendMessage("```diff\n- Select a multiplier less than 1000\n```");
+                                return;
                             }
-
-                            // Else check if the parameter matches the pattern d*-d*
-                            else if (Regex.IsMatch(p, range_pattern))
-                            {
-                                // Get the lower and upper bound in an array
-                                string[] bounds = p.Split('-');
-                                int min = Int32.Parse(bounds[0]);
-                                int max = Int32.Parse(bounds[1]);
-
-                                // Capping the range
-                                if (min >= 0 && max <= 1000000) { for (int i = min; i < max + 1; ++i) { new_param.Add(i.ToString()); } }
-                                else
-                                {
-                                    // Warn and end function if out of range
-                                    await e.Channel.SendMessage("```diff\n- Range needs to be between [0 - 1,000,000]\n```");
-                                    return;
-                                }
-
-                            }
-
-                            // Otherwise add it normally
-                            else { new_param.Add(p); } 
                         }
-                        
-                        // Converts the updated param list to array
-                        string[] parameters = new_param.ToArray();
 
-                        // Randoms an index in the string array
-                        Random rnd = new Random();
-                        string chosen = parameters[rnd.Next(parameters.Length)];
-                        int occurences = parameters.Count(str => str.Equals(chosen));
+                        // Else check if the parameter matches the pattern d*-d*
+                        else if (Regex.IsMatch(p, range_pattern)) {
+                            // Get the lower and upper bound in an array
+                            string[] bounds = p.Split('-');
+                            int min = Int32.Parse(bounds[0]);
+                            int max = Int32.Parse(bounds[1]);
 
-                        // Calculates probability and converts to % format
-                        string percent = ( (double) occurences / parameters.Length ).ToString("#0.######%");
-                        await e.Channel.SendMessage("`" + chosen + " [" + percent + "]`");
+                            // Capping the range
+                            if (min >= 0 && max <= 1000000) { for (int i = min; i < max + 1; ++i) { new_param.Add(i.ToString()); } }
+                            else {
+                                // Warn and end function if out of range
+                                await e.Channel.SendMessage("```diff\n- Range needs to be between [0 - 1,000,000]\n```");
+                                return;
+                            }
+
+                        }
+
+                        // Otherwise add it normally
+                        else { new_param.Add(p); } 
                     }
+                        
+                    // Converts the updated param list to array
+                    string[] parameters = new_param.ToArray();
 
-                    else { await e.Channel.SendMessage("```diff\n- No parameters given\n```"); }
-                });
-        }
+                    // Randoms an index in the string array
+                    Random rnd = new Random();
+                    string chosen = parameters[rnd.Next(parameters.Length)];
+                    int occurences = parameters.Count(str => str.Equals(chosen));
 
-        // Last seen online -- wont work unless bot is always online -- 
-        private void seen()
-        {
-            commands.CreateCommand("seen")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-                {
-                    string parameter = e.GetArg("param").ToLower();
-                    var users = e.Server.Users;
+                    // Calculates probability and converts to % format
+                    string percent = ( (double) occurences / parameters.Length ).ToString("#0.######%");
+                    await e.Channel.SendMessage("`" + chosen + " [" + percent + "]`");
+                }
 
-                    // Search through all users on server
-                    User found = null;
-                    foreach (var u in users) { if (u.Name.ToLower().Equals(parameter)) { found = u; } }
-
-                    // Send the resulting message
-                    if (found != null) { await e.Channel.SendMessage( name(found) + " was last online at: " + found.LastOnlineAt.ToString()); }
-                    else { await e.Channel.SendMessage("```diff\n- User not found\n```"); }
-
-                });
+                else { await e.Channel.SendMessage("```diff\n- No parameters given\n```"); }
+            });
         }
 
         // Returns a page in the League wiki
@@ -465,7 +419,7 @@ namespace Gideon
                 });
         }
         
-        // Play audio
+        // Plays audio
         private void playAudio()
         {
 
@@ -554,22 +508,76 @@ namespace Gideon
             await voiceClient.Disconnect();
         }
 
-        /* !votemute
-        private void voteMute()
-        {
-            commands.CreateCommand("votemute")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-                {
-                    await e.Channel.SendMessage("wip");
-                });
-        }*/
+        // Last seen online
+        private void seen() {
+            commands.CreateCommand("seen")
+            .Parameter("param", ParameterType.Unparsed)
+            .Do(async (e) => {
+                string parameter = e.GetArg("param").ToLower();
+                User found = null;
 
-        // HELPER FUNCTIONS
+                // Check if we can find the user by name or nickname
+                foreach (var u in e.Server.Users) {
+                    if (u.Name.ToLower().Equals(parameter)) { found = u; }
+
+                    // Else check if they have a nickname & if it matches
+                    else if (u.Nickname != null) {
+                        if (u.Nickname.ToLower().Equals(parameter)) { found = u; }
+                    }
+                }
+
+                // If we found the user...
+                if (found != null) {
+
+                    // Check if they're already online
+                    if (found.Status.Value.Equals("online")) { await e.Channel.SendMessage("`" + name(found) + " is online right now `"); }
+                    else {
+
+                        bool inFile = false;
+
+                        // Read every line in file
+                        foreach (string line in File.ReadLines(lastOnline)) {
+
+                            // If id is in file
+                            if (line.Contains(found.Id.ToString())) {
+                                inFile = true;
+                                await e.Channel.SendMessage("`" + name(found) + " was last seen at " + line.Split(',')[1] + "`");
+                            }
+                        }
+
+                        if (!inFile) { await e.Channel.SendMessage("`" + name(found) + " not seen yet`"); }
+                    }
+                }
+                else { await e.Channel.SendMessage("`User not found `"); }
+                });
+        }
+
+        // Updates the last seen online
+        void updateSeen(User u) {
+
+            var id = u.Id.ToString();
+            var time = String.Format("{0:H:mmtt on ddd d MMM yyyy}", u.LastOnlineAt);
+            string ln = null;
+
+            // Read each line and check if user id is already on there
+            foreach (string line in File.ReadLines(lastOnline)) {
+                if (line.Contains(id)) { ln = line; }
+            }
+
+            if (ln != null) { // If user id is in file, update the details 
+                string text = File.ReadAllText(lastOnline);
+                text = text.Replace(ln, id + "," + time);
+                File.WriteAllText(lastOnline, text);
+
+            }
+            else { // If it isn't, append the details to new line
+                using (StreamWriter file = new StreamWriter(lastOnline, true)) { file.WriteLine(id + "," + time + ""); }
+            }
+
+        }
 
         // Returns nickname if available
-        private string name(User user)
-        {
+        private string name(User user) {
             if (user.Nickname != null) { return user.Nickname; }
             else { return user.Name; }
         }
