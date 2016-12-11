@@ -140,25 +140,28 @@ namespace Gideon
             });
         }
 		
-        // Solve a maths problem given as a string
+        //Solve a maths problem given as a string
         private float solve(String function)
         {
             String operations = "+-*/^";
             int total_ops = 0;
             char operation = ' ';
 
-            // Find the least powerful operator
+            //Replace factorial terms 
+            function = get_factorial(function);
+
+            //Find the least powerful operator
             for (int j = 0; j < operations.Length; j++)
             {
                 for (int i = 0; i < function.Length; i++)
                 {
                     if (function[i] == operations[j])
                     {
-						// Checks to do with a sign associated with a value i.e. -4
+                        //Checks to do with a sign associated with a value i.e. -4
                         if (!((function[i] == '+' || function[i] == '-') && i == 0))
                         {
                             if ((int)function[i - 1] >= 48 && (int)function[i - 1] <= 57)
-                            { 
+                            {
                                 total_ops++;
 
                                 if (total_ops == 1)
@@ -171,23 +174,23 @@ namespace Gideon
                 }
             }
 
-            // Base case if function is just a single number
+            //Base case if function is just a single number
             if (total_ops == 0)
             {
-                // Console.WriteLine(float.Parse(function));
+                //Console.WriteLine(float.Parse(function));
                 return float.Parse(function);
             }
             else
             {
-                // Split the function into terms      
+                //Split the function into terms      
                 String[] parameters = function.Split(new char[] { operation }, 2);
 
-                // Console.WriteLine(parameters[0] + " " + parameters[1]);
+                //Console.WriteLine(parameters[0] + " " + parameters[1]);
 
-                // Apply relevent operator and return value
+                //Apply relevent operator and return value
                 if (operation == '^')
                 {
-                    return (float)Math.Pow(solve(parameters[0]),solve(parameters[1]));
+                    return (float)Math.Pow(solve(parameters[0]), solve(parameters[1]));
                 }
                 else if (operation == '*')
                 {
@@ -210,10 +213,10 @@ namespace Gideon
             }
         }
 
-        // Return factorial of a number
+        //Return factorial of a number
         private int factorial(int value)
         {
-            if (value<2)
+            if (value < 2)
             {
                 return 1;
             }
@@ -223,16 +226,16 @@ namespace Gideon
 
         private string get_factorial(string function)
         {
-            // Work out and replace any factorail terms
+            //Work out and replace any factorail terms
             for (int i = 0; i < function.Length; i++)
             {
-                // Find factorial term
+                //Find factorial term
                 if (function[i] == '!')
                 {
                     int j = i - 1;
                     string value = "";
 
-                    // Get the number to apply factorial to
+                    //Get the number to apply factorial to
                     while (j >= 0)
                     {
                         if ((int)function[j] >= 48 && (int)function[j] <= 57)
@@ -246,7 +249,7 @@ namespace Gideon
                         }
                     }
 
-                    // Work out factorial and stick it back in the original function 
+                    //Work out factorial and stick it back in the original function 
                     function = function.Replace(value + "!", factorial(Int32.Parse(value)).ToString());
                 }
             }
@@ -261,45 +264,45 @@ namespace Gideon
             string sub_function = "";
             string new_function = function;
 
-            // Loop through input function
+            //Loop through input function
             for (int i = 0; i < function.Length; i++)
             {
-                // Incorrect syntax check
+                //Incorrect syntax check
                 if (check < 0)
                 {
-                    i = function.Length;                   
+                    i = function.Length;
                 }
                 else
                 {
-                    // Search for close brackets
+                    //Search for close brackets
                     if (function[i] == ')')
                     {
                         check--;
 
-                        // If the bracket is the end of current pair
+                        //If the bracket is the end of current pair
                         if (check == 0)
                         {
                             write = false;
 
-                            // Replace the bracket pair with the solution to the pair
+                            //Replace the bracket pair with the solution to the pair
                             new_function = new_function.Replace('(' + sub_function + ')', solve_brackets(sub_function));
 
                             sub_function = "";
                         }
                     }
 
-                    // Add characters to the sub function bracket pair
+                    //Add characters to the sub function bracket pair
                     if (write)
                     {
                         sub_function += function[i];
                     }
 
-                    // Check for open bracket
+                    //Check for open bracket
                     if (function[i] == '(')
                     {
                         check++;
 
-                        // Start bracket pair
+                        //Start bracket pair
                         if (check == 1)
                         {
                             write = true;
@@ -308,29 +311,26 @@ namespace Gideon
                 }
             }
 
-            // Error in syntax
+            //Error in syntax
             if (check != 0)
             {
                 Console.WriteLine("Incorrect Syntax");
                 return "";
             }
 
-            // Return solution
+            //Return solution
             return solve(new_function).ToString();
         }
 
         private void calculate()
-        {          
+        {
             commands.CreateCommand("calculate")
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
-                {              
+                {
                     string function = e.GetArg("param").Trim();
-
-                    // Replace factorial terms 
-                    function = get_factorial(function);
-
-                    // Print the solved solution                  
+                    
+                    //Print the solved solution                  
                     await e.Channel.SendMessage(solve_brackets(function));
                 });
         }
