@@ -64,6 +64,8 @@ namespace Gideon
             lwiki();
             play();
             define();
+			tilt();
+			rank();
 
             // Logs current directory
             Console.WriteLine(Directory.GetCurrentDirectory());
@@ -340,6 +342,122 @@ namespace Gideon
                     
                     //Print the solved solution                  
                     await e.Channel.SendMessage(solve_brackets(function));
+                });
+        }
+		
+		private void tilt()
+        {
+            commands.CreateCommand("tilt")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string summoner_name = e.GetArg("param").Trim();
+                    summoner_name = summoner_name.ToLower();
+                    summoner_name = summoner_name.Replace(" ", "");
+
+                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
+
+                    WebRequest request = WebRequest.Create(URL);
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    string data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                    JObject json = JObject.Parse(data);
+
+                    string summoner_id = (string)json[summoner_name]["id"];
+                    string str;
+
+                    try
+                    {
+                        URL = "https://euw.api.pvp.net/api/lol/euw/v1.3/game/by-summoner/" + summoner_id + "/recent?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
+                        request = WebRequest.Create(URL);
+                        response = (HttpWebResponse)request.GetResponse();
+                        data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                        json = JObject.Parse(data);
+
+                        int deaths = 0;
+                        int kills = 1;
+                        int assists = 1; 
+                        int wins = 1;
+
+                        for (int i = 0; i < 3; i++)
+                        {
+                            try
+                            {
+                                deaths += (int)json["games"][i]["stats"]["numDeaths"];
+                            }
+                            catch (Exception) { }
+
+                            try
+                            {
+                                kills += (int)json["games"][i]["stats"]["championsKilled"];
+                            }
+                            catch (Exception) { }
+
+                            try
+                            {
+                                assists += (int)json["games"][i]["stats"]["assists"];
+                            }
+                            catch (Exception) { }
+
+                            try
+                            {
+                                wins += (int)json["games"][i]["stats"]["win"];
+                            }
+                            catch (Exception) { }
+                        }
+
+                        str = "Tilt Score: " + ((80 - 20*wins) + (deaths*50/(assists + kills))).ToString();
+                    }
+                    catch(Exception)
+                    {
+                        str = "Some error occured!";
+                    }
+
+                    //Print the solved solution                  
+                    await e.Channel.SendMessage(str);
+                });
+        }
+
+        private void rank()
+        {
+            commands.CreateCommand("rank")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string summoner_name = e.GetArg("param").Trim();
+                    summoner_name = summoner_name.ToLower();
+                    summoner_name = summoner_name.Replace(" ", "");
+
+                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
+
+                    WebRequest request = WebRequest.Create(URL);
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    string data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                    JObject json = JObject.Parse(data);
+
+                    string summoner_id = (string)json[summoner_name]["id"];
+                    string rank;
+
+                    try
+                    {
+                        URL = "https://euw.api.pvp.net/api/lol/euw/v2.5/league/by-summoner/" + summoner_id + "/entry?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
+                        request = WebRequest.Create(URL);
+                        response = (HttpWebResponse)request.GetResponse();
+                        data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                        json = JObject.Parse(data);
+
+                        rank = (string)json[summoner_id][0]["tier"] + " " + (string)json[summoner_id][0]["entries"][0]["division"];
+                    }
+                    catch (Exception)
+                    {
+                        rank = "UNRANKED";
+                    }
+
+                    //Print the solved solution                  
+                    await e.Channel.SendMessage(rank);
                 });
         }
 
