@@ -14,8 +14,10 @@ using Discord.Commands;
 
 using NAudio.Wave;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 using static Gideon.DictionaryData;
+
 
 namespace Gideon
 
@@ -53,43 +55,44 @@ namespace Gideon
 
             // Last online
             lastOnline = Directory.GetCurrentDirectory() + "\\last_online.txt";
-            if (!File.Exists(lastOnline)){ using (File.Create(lastOnline)) { } ; }
+            if (!File.Exists(lastOnline)) { using (File.Create(lastOnline)) { }; }
 
             // Load the commands
             sendMessage();
             purge();
             random();
             seen();
-			calculate();
+            calculate();
             lwiki();
             play();
             define();
-			tilt();
-			rank();
-
-            // Logs current directory
-            Console.WriteLine(Directory.GetCurrentDirectory());
-
+            rank();
+            tilt();
+            
             // Join & Leave messages
             client.UserUpdated += async (s, e) =>
             {
                 var channel = e.Server.DefaultChannel;
-                
+
                 if (!e.After.IsBot) // Don't notify if it's a bot joining/leaving
                 {
                     // Voice channel
-                    if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null) {
+                    if (e.Before.VoiceChannel != null && e.After.VoiceChannel == null)
+                    {
                         await channel.SendMessage("`" + name(e.After) + " has left " + e.Before.VoiceChannel + "`");
                     }
-                    else if (e.Before.VoiceChannel != e.After.VoiceChannel) {
+                    else if (e.Before.VoiceChannel != e.After.VoiceChannel)
+                    {
                         await channel.SendMessage("`" + name(e.After) + " has joined " + e.After.VoiceChannel + "`");
                     }
 
                     // Text channel
-                    if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online")) {
+                    if (e.Before.Status.Value.Equals("offline") && e.After.Status.Value.Equals("online"))
+                    {
                         await channel.SendMessage("`" + name(e.After) + " is now online `");
                     }
-                    else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline")) {
+                    else if (e.Before.Status.Value.Equals("online") && e.After.Status.Value.Equals("offline"))
+                    {
                         await channel.SendMessage("`" + name(e.After) + " is now offline `");
                         updateSeen(e.After);
                     }
@@ -121,19 +124,23 @@ namespace Gideon
             commands.CreateCommand("purge")
             .Parameter("param", ParameterType.Unparsed)
             .Do(async (e) => {
-                if (e.User.ServerPermissions.Administrator) {
+                if (e.User.ServerPermissions.Administrator)
+                {
                     string parameter = e.GetArg("param");
                     string[] parameters = parameter.Split(' ');
 
                     // Download x number of messages
-                    Message[] dl_msgs = await e.Channel.DownloadMessages(Int32.Parse(parameters[0]) + 1 );
+                    Message[] dl_msgs = await e.Channel.DownloadMessages(Int32.Parse(parameters[0]) + 1);
                     List<Message> messages = new List<Message>();
 
-                    if (parameter.Length != 0) { // If a parameter has been supplied
-                        
+                    if (parameter.Length != 0)
+                    { // If a parameter has been supplied
+
                         // If a filter has been supplied
-                        if (parameters.Length == 2) {
-                            foreach (var m in dl_msgs) {
+                        if (parameters.Length == 2)
+                        {
+                            foreach (var m in dl_msgs)
+                            {
                                 if (m.Text.Contains(parameters[1])) { messages.Add(m); }
                             }
                         }
@@ -142,14 +149,14 @@ namespace Gideon
                         else { foreach (var m in dl_msgs) { messages.Add(m); } }
 
                     }
-                    
+
                     // Delete the messages
                     await e.Channel.DeleteMessages(messages.ToArray());
                 }
                 else { await e.Channel.SendMessage("`You don't have permissions`"); }
             });
         }
-		
+
         //Solve a maths problem given as a string
         private float solve(String function)
         {
@@ -339,129 +346,13 @@ namespace Gideon
                 .Do(async (e) =>
                 {
                     string function = e.GetArg("param").Trim();
-                    
+
                     //Print the solved solution                  
                     await e.Channel.SendMessage(solve_brackets(function));
                 });
         }
-		
-		private void tilt()
-        {
-            commands.CreateCommand("tilt")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-                {
-                    string summoner_name = e.GetArg("param").Trim();
-                    summoner_name = summoner_name.ToLower();
-                    summoner_name = summoner_name.Replace(" ", "");
 
-                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
-
-                    WebRequest request = WebRequest.Create(URL);
-                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                    string data = new StreamReader(response.GetResponseStream()).ReadToEnd();
-
-                    JObject json = JObject.Parse(data);
-
-                    string summoner_id = (string)json[summoner_name]["id"];
-                    string str;
-
-                    try
-                    {
-                        URL = "https://euw.api.pvp.net/api/lol/euw/v1.3/game/by-summoner/" + summoner_id + "/recent?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
-                        request = WebRequest.Create(URL);
-                        response = (HttpWebResponse)request.GetResponse();
-                        data = new StreamReader(response.GetResponseStream()).ReadToEnd();
-
-                        json = JObject.Parse(data);
-
-                        int deaths = 0;
-                        int kills = 1;
-                        int assists = 1; 
-                        int wins = 1;
-
-                        for (int i = 0; i < 3; i++)
-                        {
-                            try
-                            {
-                                deaths += (int)json["games"][i]["stats"]["numDeaths"];
-                            }
-                            catch (Exception) { }
-
-                            try
-                            {
-                                kills += (int)json["games"][i]["stats"]["championsKilled"];
-                            }
-                            catch (Exception) { }
-
-                            try
-                            {
-                                assists += (int)json["games"][i]["stats"]["assists"];
-                            }
-                            catch (Exception) { }
-
-                            try
-                            {
-                                wins += (int)json["games"][i]["stats"]["win"];
-                            }
-                            catch (Exception) { }
-                        }
-
-                        str = "Tilt Score: " + ((80 - 20*wins) + (deaths*50/(assists + kills))).ToString();
-                    }
-                    catch(Exception)
-                    {
-                        str = "Some error occured!";
-                    }
-
-                    //Print the solved solution                  
-                    await e.Channel.SendMessage(str);
-                });
-        }
-
-        private void rank()
-        {
-            commands.CreateCommand("rank")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-                {
-                    string summoner_name = e.GetArg("param").Trim();
-                    summoner_name = summoner_name.ToLower();
-                    summoner_name = summoner_name.Replace(" ", "");
-
-                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
-
-                    WebRequest request = WebRequest.Create(URL);
-                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                    string data = new StreamReader(response.GetResponseStream()).ReadToEnd();
-
-                    JObject json = JObject.Parse(data);
-
-                    string summoner_id = (string)json[summoner_name]["id"];
-                    string rank;
-
-                    try
-                    {
-                        URL = "https://euw.api.pvp.net/api/lol/euw/v2.5/league/by-summoner/" + summoner_id + "/entry?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
-                        request = WebRequest.Create(URL);
-                        response = (HttpWebResponse)request.GetResponse();
-                        data = new StreamReader(response.GetResponseStream()).ReadToEnd();
-
-                        json = JObject.Parse(data);
-
-                        rank = (string)json[summoner_id][0]["tier"] + " " + (string)json[summoner_id][0]["entries"][0]["division"];
-                    }
-                    catch (Exception)
-                    {
-                        rank = "UNRANKED";
-                    }
-
-                    //Print the solved solution                  
-                    await e.Channel.SendMessage(rank);
-                });
-        }
-
-		 //Function that returns how tilted a league player is
+        //Function that returns how tilted a league player is
         private void tilt()
         {
             commands.CreateCommand("tilt")
@@ -475,8 +366,8 @@ namespace Gideon
                     summoner_name = summoner_name.Replace(" ", "");
 
                     //Url to find players id
-                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=" + ConfigurationManager.AppSettings["RIOT_KEY"];
-                    
+                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=" + ConfigurationManager.AppSettings["RiotKey"];
+
                     //Make request and turn into a json object
                     WebRequest request = WebRequest.Create(URL);
                     HttpWebResponse response = (HttpWebResponse)request.GetResponse();
@@ -491,7 +382,7 @@ namespace Gideon
                     try
                     {
                         //Url to look up players recent match histroy 
-                        URL = "https://euw.api.pvp.net/api/lol/euw/v1.3/game/by-summoner/" + summoner_id + "/recent?api_key=" + ConfigurationManager.AppSettings["RIOT_KEY"];
+                        URL = "https://euw.api.pvp.net/api/lol/euw/v1.3/game/by-summoner/" + summoner_id + "/recent?api_key=" + ConfigurationManager.AppSettings["RiotKey"];
 
                         //Make request and turn into a json object
                         request = WebRequest.Create(URL);
@@ -502,7 +393,7 @@ namespace Gideon
 
                         int deaths = 0;
                         int kills = 1;
-                        int assists = 1; 
+                        int assists = 1;
                         int wins = 1;
 
                         //Loop through last three games
@@ -535,9 +426,9 @@ namespace Gideon
                         }
 
                         //Calculate tilt value
-                        str = "Tilt Score: " + ((80 - 20*wins) + (deaths*50/(assists + kills))).ToString();
+                        str = "Tilt Score: " + ((80 - 20 * wins) + (deaths * 50 / (assists + kills))).ToString();
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         //In case of http error
                         str = "Some error occured!";
@@ -562,7 +453,7 @@ namespace Gideon
                     summoner_name = summoner_name.Replace(" ", "");
 
                     //Url to find players id
-                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
+                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=" + ConfigurationManager.AppSettings["RiotKey"];
 
                     //Make request and turn into a json object
                     WebRequest request = WebRequest.Create(URL);
@@ -578,7 +469,7 @@ namespace Gideon
                     try
                     {
                         //Url to look up players rank
-                        URL = "https://euw.api.pvp.net/api/lol/euw/v2.5/league/by-summoner/" + summoner_id + "/entry?api_key=RGAPI-4DBFCDD6-A7F8-44BB-81AF-0642680E882C";
+                        URL = "https://euw.api.pvp.net/api/lol/euw/v2.5/league/by-summoner/" + summoner_id + "/entry?api_key=" + ConfigurationManager.AppSettings["RiotKey"];
 
                         //Make request and turn into a json object
                         request = WebRequest.Create(URL);
@@ -600,19 +491,21 @@ namespace Gideon
                     await e.Channel.SendMessage(rank);
                 });
         }
-		
+
         // Randoms a value from a list
-        private void random(){
+        private void random()
+        {
             commands.CreateCommand("random")
             .Parameter("param", ParameterType.Unparsed)
-            .Do(async (e) => 
+            .Do(async (e) =>
             {
                 string parameter = e.GetArg("param");
                 string mult_pattern = "^.*\\*[0-9]*$";
                 string range_pattern = "^[0-9]*-[0-9]*$";
-                    
+
                 // Check if a parameter has been supplied
-                if (parameter.Length != 0) {
+                if (parameter.Length != 0)
+                {
                     // Split parameter string by spaces
                     List<string> param_list = parameter.Split(' ').ToList<string>();
 
@@ -620,22 +513,26 @@ namespace Gideon
                     List<string> new_param = new List<string>();
 
                     // Iterate through old parameters
-                    foreach (string p in param_list) {
+                    foreach (string p in param_list)
+                    {
                         // Check if current parameter is a multiplier
-                        if (Regex.IsMatch(p,mult_pattern)) {
+                        if (Regex.IsMatch(p, mult_pattern))
+                        {
                             string[] p_split = p.Split('*');
                             int max = Int32.Parse(p_split[1]);
 
                             // Warn and end function if out of range
                             if (max < 1000) { for (int i = 0; i < max; ++i) { new_param.Add(p_split[0]); } }
-                            else {
+                            else
+                            {
                                 await e.Channel.SendMessage("```diff\n- Select a multiplier less than 1000\n```");
                                 return;
                             }
                         }
 
                         // Else check if the parameter matches the pattern d*-d*
-                        else if (Regex.IsMatch(p, range_pattern)) {
+                        else if (Regex.IsMatch(p, range_pattern))
+                        {
                             // Get the lower and upper bound in an array
                             string[] bounds = p.Split('-');
                             int min = Int32.Parse(bounds[0]);
@@ -643,7 +540,8 @@ namespace Gideon
 
                             // Capping the range
                             if (min >= 0 && max <= 1000000) { for (int i = min; i < max + 1; ++i) { new_param.Add(i.ToString()); } }
-                            else {
+                            else
+                            {
                                 // Warn and end function if out of range
                                 await e.Channel.SendMessage("```diff\n- Range needs to be between [0 - 1,000,000]\n```");
                                 return;
@@ -652,9 +550,9 @@ namespace Gideon
                         }
 
                         // Otherwise add it normally
-                        else { new_param.Add(p); } 
+                        else { new_param.Add(p); }
                     }
-                        
+
                     // Converts the updated param list to array
                     string[] parameters = new_param.ToArray();
 
@@ -664,7 +562,7 @@ namespace Gideon
                     int occurences = parameters.Count(str => str.Equals(chosen));
 
                     // Calculates probability and converts to % format
-                    string percent = ( (double) occurences / parameters.Length ).ToString("#0.######%");
+                    string percent = ((double)occurences / parameters.Length).ToString("#0.######%");
                     await e.Channel.SendMessage("`" + chosen + " [" + percent + "]`");
                 }
 
@@ -685,7 +583,7 @@ namespace Gideon
                 await e.Channel.SendMessage(baseURL + parameter);
             });
         }
-        
+
         // Plays audio
         private void play()
         {
@@ -714,7 +612,7 @@ namespace Gideon
                     // Concats channel and its number and finds the Channel object for it
                     string channelName = "Channel " + channelNumber;
                     var chan = e.Server.FindChannels(channelName).FirstOrDefault();
-                    
+
                     // Concats the filepath and the specified songname
                     string fileName = songName.ToLower();
                     string fileURL = Directory.GetCurrentDirectory() + "\\" + fileName + ".mp3";
@@ -777,38 +675,45 @@ namespace Gideon
         }
 
         // Last seen online
-        private void seen() {
+        private void seen()
+        {
             commands.CreateCommand("seen")
             .Parameter("param", ParameterType.Unparsed)
-            .Do(async (e) => 
+            .Do(async (e) =>
             {
                 string parameter = e.GetArg("param").ToLower();
                 User found = null;
 
                 // Check if we can find the user by name or nickname
-                foreach (var u in e.Server.Users) {
+                foreach (var u in e.Server.Users)
+                {
                     if (u.Name.ToLower().Equals(parameter)) { found = u; }
 
                     // Else check if they have a nickname & if it matches
-                    else if (u.Nickname != null) {
+                    else if (u.Nickname != null)
+                    {
                         if (u.Nickname.ToLower().Equals(parameter)) { found = u; }
                     }
                 }
 
                 // If we found the user...
-                if (found != null) {
+                if (found != null)
+                {
 
                     // Check if they're already online
                     if (found.Status.Value.Equals("online")) { await e.Channel.SendMessage("`" + name(found) + " is online right now `"); }
-                    else {
+                    else
+                    {
 
                         bool inFile = false;
 
                         // Read every line in file
-                        foreach (string line in File.ReadLines(lastOnline)) {
+                        foreach (string line in File.ReadLines(lastOnline))
+                        {
 
                             // If id is in file
-                            if (line.Contains(found.Id.ToString())) {
+                            if (line.Contains(found.Id.ToString()))
+                            {
                                 inFile = true;
                                 await e.Channel.SendMessage("`" + name(found) + " was last seen at " + line.Split(',')[1] + "`");
                             }
@@ -818,28 +723,32 @@ namespace Gideon
                     }
                 }
                 else { await e.Channel.SendMessage("`User not found `"); }
-                });
+            });
         }
 
         // Updates the last seen online
-        void updateSeen(User u) {
+        void updateSeen(User u)
+        {
 
             var id = u.Id.ToString();
             var time = String.Format("{0:H:mmtt on ddd d MMM yyyy}", u.LastOnlineAt);
             string ln = null;
 
             // Read each line and check if user id is already on there
-            foreach (string line in File.ReadLines(lastOnline)) {
+            foreach (string line in File.ReadLines(lastOnline))
+            {
                 if (line.Contains(id)) { ln = line; }
             }
 
-            if (ln != null) { // If user id is in file, update the details 
+            if (ln != null)
+            { // If user id is in file, update the details 
                 string text = File.ReadAllText(lastOnline);
                 text = text.Replace(ln, id + "," + time);
                 File.WriteAllText(lastOnline, text);
 
             }
-            else { // If it isn't, append the details to new line
+            else
+            { // If it isn't, append the details to new line
                 using (StreamWriter file = new StreamWriter(lastOnline, true)) { file.WriteLine(id + "," + time + ""); }
             }
 
@@ -850,7 +759,7 @@ namespace Gideon
         {
             commands.CreateCommand("define")
             .Parameter("param", ParameterType.Unparsed)
-            .Do(async (e) => 
+            .Do(async (e) =>
             {
 
                 // Prepares the API url
@@ -872,13 +781,18 @@ namespace Gideon
                 ArrayList definitions = new ArrayList(); ArrayList examples = new ArrayList();
 
                 // Iterate through the data
-                foreach (Lexicalentry lex in data.results[0].lexicalEntries) {
-                    foreach (Entry ent in lex.entries) {
-                        foreach (Sense sen in ent.senses) {
+                foreach (Lexicalentry lex in data.results[0].lexicalEntries)
+                {
+                    foreach (Entry ent in lex.entries)
+                    {
+                        foreach (Sense sen in ent.senses)
+                        {
 
                             // If there is a definition
-                            if (sen.definitions != null) {
-                                if (definitions.Count != 2) {
+                            if (sen.definitions != null)
+                            {
+                                if (definitions.Count != 2)
+                                {
                                     definitions.Add("(" + lex.lexicalCategory + ") " + sen.definitions[0]);
                                 }
                             }
@@ -886,7 +800,8 @@ namespace Gideon
                             // If there is an example
                             if (sen.examples != null)
                             {
-                                if (examples.Count != 2) {
+                                if (examples.Count != 2)
+                                {
                                     examples.Add("Example: " + '"' + sen.examples[0].text + '"');
                                 }
                             }
@@ -924,14 +839,17 @@ namespace Gideon
         // GET request 
         string GET(string url, Dictionary<string, string> headers)
         {
-            try {
+            try
+            {
                 // New web request
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                 request.Method = "GET";
 
                 // Add headers if specified
-                if (headers != null) {
-                    foreach (var pair in headers) {
+                if (headers != null)
+                {
+                    foreach (var pair in headers)
+                    {
                         request.Headers.Add(pair.Key, pair.Value);
                     }
                 }
@@ -941,7 +859,8 @@ namespace Gideon
                 using (Stream answer = response.GetResponseStream())
                 using (StreamReader reader = new StreamReader(answer)) { return reader.ReadToEnd(); }
 
-            } catch { return null; }
+            }
+            catch { return null; }
 
         }
 
