@@ -342,6 +342,146 @@ namespace Gideon
                     await e.Channel.SendMessage(solve_brackets(function));
                 });
         }
+		
+		//Function that returns how tilted a league player is
+        private void tilt()
+        {
+            commands.CreateCommand("tilt")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string summoner_name = e.GetArg("param").Trim();
+
+                    //Change summoner_name into a form to be used ion url
+                    summoner_name = summoner_name.ToLower();
+                    summoner_name = summoner_name.Replace(" ", "");
+
+                    //Url to find players id
+                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=" + ConfigurationManager.AppSettings["RIOT_KEY"];
+                    
+                    //Make request and turn into a json object
+                    WebRequest request = WebRequest.Create(URL);
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    string data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                    JObject json = JObject.Parse(data);
+
+                    //Find players id in the json
+                    string summoner_id = (string)json[summoner_name]["id"];
+                    string str;
+
+                    try
+                    {
+                        //Url to look up players recent match histroy 
+                        URL = "https://euw.api.pvp.net/api/lol/euw/v1.3/game/by-summoner/" + summoner_id + "/recent?api_key=" + ConfigurationManager.AppSettings["RIOT_KEY"];
+
+                        //Make request and turn into a json object
+                        request = WebRequest.Create(URL);
+                        response = (HttpWebResponse)request.GetResponse();
+                        data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                        json = JObject.Parse(data);
+
+                        int deaths = 0;
+                        int kills = 1;
+                        int assists = 1; 
+                        int wins = 1;
+
+                        //Loop through last three games
+                        for (int i = 0; i < 3; i++)
+                        {
+                            //Add relevent information to variables
+                            try
+                            {
+                                deaths += (int)json["games"][i]["stats"]["numDeaths"];
+                            }
+                            catch (Exception) { }
+
+                            try
+                            {
+                                kills += (int)json["games"][i]["stats"]["championsKilled"];
+                            }
+                            catch (Exception) { }
+
+                            try
+                            {
+                                assists += (int)json["games"][i]["stats"]["assists"];
+                            }
+                            catch (Exception) { }
+
+                            try
+                            {
+                                wins += (int)json["games"][i]["stats"]["win"];
+                            }
+                            catch (Exception) { }
+                        }
+
+                        //Calculate tilt value
+                        str = "Tilt Score: " + ((80 - 20*wins) + (deaths*50/(assists + kills))).ToString();
+                    }
+                    catch(Exception)
+                    {
+                        //In case of http error
+                        str = "Some error occured!";
+                    }
+
+                    //Return the tilt score
+                    await e.Channel.SendMessage(str);
+                });
+        }
+
+        //Function that returns a league players rank
+        private void rank()
+        {
+            commands.CreateCommand("rank")
+                .Parameter("param", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string summoner_name = e.GetArg("param").Trim();
+
+                    //Change summoner_name into a form to be used ion url
+                    summoner_name = summoner_name.ToLower();
+                    summoner_name = summoner_name.Replace(" ", "");
+
+                    //Url to find players id
+                    string URL = "https://euw.api.pvp.net/api/lol/euw/v1.4/summoner/by-name/" + summoner_name + "?api_key=" + ConfigurationManager.AppSettings["RIOT_KEY"];
+
+                    //Make request and turn into a json object
+                    WebRequest request = WebRequest.Create(URL);
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    string data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                    JObject json = JObject.Parse(data);
+
+                    //Find players id in the json
+                    string summoner_id = (string)json[summoner_name]["id"];
+                    string rank;
+
+                    try
+                    {
+                        //Url to look up players rank
+                        URL = "https://euw.api.pvp.net/api/lol/euw/v2.5/league/by-summoner/" + summoner_id + "/entry?api_key=" + ConfigurationManager.AppSettings["RIOT_KEY"];
+
+                        //Make request and turn into a json object
+                        request = WebRequest.Create(URL);
+                        response = (HttpWebResponse)request.GetResponse();
+                        data = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                        json = JObject.Parse(data);
+
+                        //Find players rank in the json
+                        rank = (string)json[summoner_id][0]["tier"] + " " + (string)json[summoner_id][0]["entries"][0]["division"];
+                    }
+                    catch (Exception)
+                    {
+                        //If no rank information is found 
+                        rank = "UNRANKED";
+                    }
+
+                    //Return the rank                  
+                    await e.Channel.SendMessage(rank);
+                });
+        }
 
         // Randoms a value from a list
         private void random(){
