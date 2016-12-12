@@ -1,9 +1,11 @@
 # Gideon
-A personal Discord bot written in C# using the Discord.NET library.  
-Maintained by Adrian & Matt.
+A personal Discord bot written in C# using the Discord.NET 0.9 library.  
+Maintained by Adrian and Matt.
+
 ## Features
-- Notifies when someone comes online or goes offline.
-- Notifies when someone connects or disconnects from a voice channel.
+- Notifies when a user comes online or goes offline.
+- Notifies when a user connects or disconnects from a voice channel.
+- Keeps track of when a user was last online.
 
 ## Commands
 
@@ -42,7 +44,21 @@ Gideon can join a channel number and play from a set of sounds:
 - `!stop` Stops playing audio and disconnects from the channel.
 
 ##### Available Filenames:
-- celebrate, home, jazz, start
+- start
+
+### Seen
+Check when a user was last online (by their username or nickname):
+- `!seen Barry` | Barry was last seen at 8:00pm on Tue 7 Oct 2014
+
+### Define
+Calls upon Oxford Dictionary's API to define a word and provides an example (if available).
+- `!define camera`
+```
+camera
+-
+(Noun) a device for recording visual images in the form of photographs, film, or video signals:
+Example: "she faced the cameras"
+```
 
  - - - -
  ![Gideon - Built with Love](http://forthebadge.com/images/featured/featured-built-with-love.svg)

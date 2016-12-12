@@ -1,6 +1,10 @@
 ﻿using System;
+using System.IO;
+using System.Net;
 using System.Linq;
+using System.Collections;
 using System.Configuration;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -9,8 +13,9 @@ using Discord.Audio;
 using Discord.Commands;
 
 using NAudio.Wave;
-using System.Threading.Tasks;
-using System.IO;
+using Newtonsoft.Json;
+
+using static Gideon.DictionaryData;
 
 namespace Gideon
 
@@ -20,8 +25,7 @@ namespace Gideon
         static DiscordClient client;
         static CommandService commands;
         static IAudioClient voiceClient;
-        static bool playingSong = false;
-
+        static bool playingAudio = false;
         static string lastOnline;
 
         // Constructor
@@ -48,7 +52,7 @@ namespace Gideon
             client.UsingAudio(x => { x.Mode = AudioMode.Outgoing; });
 
             // Last online
-            lastOnline = System.IO.Directory.GetCurrentDirectory() + "\\last_online.txt";
+            lastOnline = Directory.GetCurrentDirectory() + "\\last_online.txt";
             if (!File.Exists(lastOnline)){ using (File.Create(lastOnline)) { } ; }
 
             // Load the commands
@@ -58,7 +62,8 @@ namespace Gideon
             seen();
 			calculate();
             lwiki();
-            //playAudio();
+            play();
+            define();
 
             // Join & Leave messages
             client.UserUpdated += async (s, e) =>
@@ -99,15 +104,15 @@ namespace Gideon
         private void sendMessage()
         {
             // Displays help message
-            commands.CreateCommand("help").Do(async (e) =>
-            {
+            commands.CreateCommand("help").Do(async (e) => {
                 await e.Channel.SendMessage("https://github.com/adrianau/Gideon");
             });
 
         }
 
         // Deletes messages
-        private void purge() {
+        private void purge()
+        {
             commands.CreateCommand("purge")
             .Parameter("param", ParameterType.Unparsed)
             .Do(async (e) => {
@@ -339,7 +344,8 @@ namespace Gideon
         private void random(){
             commands.CreateCommand("random")
             .Parameter("param", ParameterType.Unparsed)
-            .Do(async (e) =>{
+            .Do(async (e) => 
+            {
                 string parameter = e.GetArg("param");
                 string mult_pattern = "^.*\\*[0-9]*$";
                 string range_pattern = "^[0-9]*-[0-9]*$";
@@ -409,24 +415,24 @@ namespace Gideon
         private void lwiki()
         {
             commands.CreateCommand("lwiki")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
-                {
-                    string parameter = e.GetArg("param").ToLower().Replace(' ', '_');
-                    string baseURL = "http://leagueoflegends.wikia.com/wiki/";
+            .Parameter("param", ParameterType.Unparsed)
+            .Do(async (e) =>
+            {
+                string parameter = e.GetArg("param").ToLower().Replace(' ', '_');
+                string baseURL = "http://leagueoflegends.wikia.com/wiki/";
 
-                    await e.Channel.SendMessage(baseURL + parameter);
-                });
+                await e.Channel.SendMessage(baseURL + parameter);
+            });
         }
         
         // Plays audio
-        private void playAudio()
+        private void play()
         {
 
             // Play an audio file
             commands.CreateCommand("play")
-                .Parameter("param", ParameterType.Unparsed)
-                .Do(async (e) =>
+            .Parameter("param", ParameterType.Unparsed)
+            .Do(async (e) =>
             {
                 if (e.User.ServerPermissions.Administrator)
                 {
@@ -442,7 +448,7 @@ namespace Gideon
                     else { channelNumber = e.User.VoiceChannel.ToString().Split(' ')[1]; }
 
                     // Don't run function if song is already playing
-                    if (playingSong == true) return;
+                    if (playingAudio == true) return;
 
                     // Concats channel and its number and finds the Channel object for it
                     string channelName = "Channel " + channelNumber;
@@ -453,9 +459,9 @@ namespace Gideon
                     string fileURL = @"C:\Users\Adrian\Dropbox\OP.GGT\gideon\" + fileName + ".mp3";
 
                     // Play the audio
-                    playingSong = true;
+                    playingAudio = true;
                     await SendAudio(fileURL, chan);
-                    playingSong = false;
+                    playingAudio = false;
                 }
                 else { await e.Channel.SendMessage("`You don't have permissions`"); }
             });
@@ -464,7 +470,7 @@ namespace Gideon
             commands.CreateCommand("stop")
                 .Do(async (e) =>
                 {
-                    if (e.User.ServerPermissions.Administrator) { playingSong = false; }
+                    if (e.User.ServerPermissions.Administrator) { playingAudio = false; }
                     else { await e.Channel.SendMessage("`You don't have permissions`"); }
                 });
         }
@@ -489,8 +495,8 @@ namespace Gideon
                     byte[] buffer = new byte[blockSize];
                     int byteCount;
 
-                    // Add in the "&& playingSong" so that it only plays while true. For our cheesy skip command.
-                    while ((byteCount = resampler.Read(buffer, 0, blockSize)) > 0 && playingSong) // Read audio into our buffer, and keep a loop open while data is present
+                    // Add in the "&& playingAudio" so that it only plays while true. For our cheesy skip command.
+                    while ((byteCount = resampler.Read(buffer, 0, blockSize)) > 0 && playingAudio) // Read audio into our buffer, and keep a loop open while data is present
                     {
                         if (byteCount < blockSize)
                         {
@@ -512,7 +518,8 @@ namespace Gideon
         private void seen() {
             commands.CreateCommand("seen")
             .Parameter("param", ParameterType.Unparsed)
-            .Do(async (e) => {
+            .Do(async (e) => 
+            {
                 string parameter = e.GetArg("param").ToLower();
                 User found = null;
 
@@ -576,14 +583,115 @@ namespace Gideon
 
         }
 
+        // Define
+        void define()
+        {
+            commands.CreateCommand("define")
+            .Parameter("param", ParameterType.Unparsed)
+            .Do(async (e) => 
+            {
+
+                // Prepares the API url
+                string parameter = e.GetArg("param").ToLower().Replace(' ', '_').Trim();
+                string url = "https://od-api.oxforddictionaries.com:443/api/v1/entries/en/" + parameter;
+
+                // Add authentication headers
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                string oxId = ConfigurationManager.AppSettings["OxfordId"];
+                string oxKey = ConfigurationManager.AppSettings["OxfordKey"];
+                headers.Add("app_id", oxId); headers.Add("app_key", oxKey);
+
+                // Attempts the GET request
+                string response = GET(url, headers);
+                if (response == null) { await e.Channel.SendMessage("`Can't find the word`"); return; }  // No response
+
+                // Data
+                DictionaryResults data = JsonConvert.DeserializeObject<DictionaryResults>(response);
+                ArrayList definitions = new ArrayList(); ArrayList examples = new ArrayList();
+
+                // Iterate through the data
+                foreach (Lexicalentry lex in data.results[0].lexicalEntries) {
+                    foreach (Entry ent in lex.entries) {
+                        foreach (Sense sen in ent.senses) {
+
+                            // If there is a definition
+                            if (sen.definitions != null) {
+                                if (definitions.Count != 2) {
+                                    definitions.Add("(" + lex.lexicalCategory + ") " + sen.definitions[0]);
+                                }
+                            }
+
+                            // If there is an example
+                            if (sen.examples != null)
+                            {
+                                if (examples.Count != 2) {
+                                    examples.Add("Example: " + '"' + sen.examples[0].text + '"');
+                                }
+                            }
+                            else { examples.Add(""); }
+
+                        }
+                    }
+                }
+
+                // Fill the ArrayLists
+                while (definitions.Count < 2) definitions.Add("");
+                while (examples.Count < 2) examples.Add("");
+
+                // Build the message
+                var n = Environment.NewLine;
+                string output = definitions[0] + n + examples[0] + n + n + definitions[1] + n + examples[1];
+                await e.Channel.SendMessage("```diff" + n + parameter + n + "-" + n + output + n + "```");
+
+                /* Audio playback disabled on Pi due to memory issues
+                // Download pronunciation audio file
+                string audio = data.results[0].lexicalEntries[0].pronunciations[0].audioFile;
+                string download = Directory.GetCurrentDirectory() + "\\" + parameter + ".mp3";
+                using (var wc = new WebClient()) { wc.DownloadFile(new Uri(audio), download); }
+
+                // Don't play audio if something is already playing
+                if (playingAudio == true) return;
+
+                // Play the audio
+                playingAudio = true;
+                await SendAudio(download, e.User.VoiceChannel);
+                */
+            });
+        }
+
+        // GET request 
+        string GET(string url, Dictionary<string, string> headers)
+        {
+            try {
+                // New web request
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.Method = "GET";
+
+                // Add headers if specified
+                if (headers != null) {
+                    foreach (var pair in headers) {
+                        request.Headers.Add(pair.Key, pair.Value);
+                    }
+                }
+
+                // Get the response, read and return it
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                using (Stream answer = response.GetResponseStream())
+                using (StreamReader reader = new StreamReader(answer)) { return reader.ReadToEnd(); }
+
+            } catch { return null; }
+
+        }
+
         // Returns nickname if available
-        private string name(User user) {
+        private string name(User user)
+        {
             if (user.Nickname != null) { return user.Nickname; }
             else { return user.Name; }
         }
 
         // Log to console
         private void Log(object sender, LogMessageEventArgs e) { Console.WriteLine(e.Message); }
-
     }
 }
+
