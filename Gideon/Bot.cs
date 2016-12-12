@@ -65,6 +65,9 @@ namespace Gideon
             play();
             define();
 
+            // Logs current directory
+            Console.WriteLine(Directory.GetCurrentDirectory());
+
             // Join & Leave messages
             client.UserUpdated += async (s, e) =>
             {
@@ -456,12 +459,11 @@ namespace Gideon
                     
                     // Concats the filepath and the specified songname
                     string fileName = songName.ToLower();
-                    string fileURL = @"C:\Users\Adrian\Dropbox\OP.GGT\gideon\" + fileName + ".mp3";
+                    string fileURL = Directory.GetCurrentDirectory() + "\\" + fileName + ".mp3";
 
                     // Play the audio
                     playingAudio = true;
                     await SendAudio(fileURL, chan);
-                    playingAudio = false;
                 }
                 else { await e.Channel.SendMessage("`You don't have permissions`"); }
             });
@@ -507,10 +509,12 @@ namespace Gideon
 
                         voiceClient.Send(buffer, 0, blockSize); // Send the buffer to Discord
                     }
+                    await PutTaskDelay(2000);
                     await voiceClient.Disconnect();
+                    playingAudio = false;
                 }
             }
-            catch { System.Console.WriteLine("Something went wrong"); }
+            catch { Console.WriteLine("Something went wrong"); }
             await voiceClient.Disconnect();
         }
 
@@ -689,6 +693,9 @@ namespace Gideon
             if (user.Nickname != null) { return user.Nickname; }
             else { return user.Name; }
         }
+
+        // Delay (milliseconds)
+        static async Task PutTaskDelay(int ms) { await Task.Delay(ms); }
 
         // Log to console
         private void Log(object sender, LogMessageEventArgs e) { Console.WriteLine(e.Message); }
