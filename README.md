@@ -32,6 +32,14 @@ Calculate will follow "bidmas" and supports these operations:
 - `!cal 5!-5+5/5*5^5` | 3240
 - `!cal (5+5)*5` | 50
 
+### Rank
+Gideon can find and return the rank of a league summoner:
+- `!rank [summoner]` Returns the summoners rank
+
+### Tilt
+Gideon we calculate how tilted a league summoner is:
+- `!tilt [summoner]` Returns a value predicting a summoners tilt (higher = more tilted)
+
 ### LWiki (WIP)
 Returns a page from the League of Legends Wikia:
 - `!lwiki ashe` | http://leagueoflegends.wikia.com/wiki/Ashe

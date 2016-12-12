@@ -341,7 +341,7 @@ namespace Gideon
 
         private void calculate()
         {
-            commands.CreateCommand("calculate")
+            commands.CreateCommand("cal")
                 .Parameter("param", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {
