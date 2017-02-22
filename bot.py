@@ -2,6 +2,7 @@ import config
 import discord
 import json
 import os
+import random
 from datetime import datetime
 from discord.ext import commands
 from discord.member import Status
@@ -20,24 +21,14 @@ async def on_ready():
 async def info():
 	await bot.say('https://github.com/adrianau/Gideon/tree/python')
 
-@bot.command(pass_context = True)
-async def test(context, message):
-	await bot.say('Guess a number between 1 and 10')
-
-	def guess_check(m):
-		return m.content.isdigit()
-
-	guess = await bot.wait_for_message(timeout=5.0, author = context.message.author, check = guess_check)
-	answer = random.randint(1,10)
-
-	if guess is None:
-		fmt = 'Sorry, you took too long. It was {}.'
-		await client.send_message(message.channel, fmt.format(answer))
-		return
-	if int(guess.content) == answer:
-		await bot.say('ur right')
+@bot.command() # randomly chooses from a given list
+async def choose(*choices : str):
+	if choices:
+		answer = random.choice(choices)
+		chance = '{0:.0f}%'.format(choices.count(answer) / len(choices) * 100)
+		await bot.say( bt(answer + ' (' + chance + ')') )
 	else:
-		await bot.say('ur wrong')
+		await bot.say( bt('No inputs given') )
 
 @bot.event # logs online and offline status
 async def on_member_update(before, after):
