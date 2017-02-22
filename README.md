@@ -5,7 +5,9 @@ Maintained by Adrian and Matt.
 ## Features
 - Notifies when a user comes online or goes offline.
 - Notifies when a user connects or disconnects from a voice channel.
+- Logs all the notifications in a separate channel to avoid spam.
 - Keeps track of when a user was last online.
+- Dynamic @Voice role to mention all users only in voice chat.
 
 ## Commands
 
