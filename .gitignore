@@ -7,6 +7,9 @@
 *.userosscache
 *.sln.docstates
 config.py
+old_g4.py
+seen.json
+aliases.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
