@@ -7,3 +7,4 @@ class Server():
 	log = None
 	voice_client = None
 	voice_player = None
+	lq	 = []

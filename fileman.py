@@ -3,12 +3,10 @@ import json
 from datetime import datetime
 
 def init():
-	files = ['aliases.json', 'seen.json']
+	files = ['aliases.json', 'seen.json', 'league.json']
 
 	for file in files:
-
 		if os.path.exists(file) is False:
-
 			print(file +  ' not found')
 
 			with open(file, 'w') as f:
