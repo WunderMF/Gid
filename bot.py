@@ -10,7 +10,6 @@ from datetime import datetime
 from discord import Status
 from pprint import pprint
 
-
 bot = commands.Bot(command_prefix = '!')
 bot_files = ['seen.json', 'aliases.json']
 bot_roles = ['voice']
@@ -26,7 +25,7 @@ async def on_ready():
 
 @bot.event
 async def on_member_update(before, after):
-	"""Logs when users connect and disconnect from the server"""
+	"""Log the users that connect and disconnect from the server."""
 	if not after.bot:
 		if (before.status is not Status.offline) & (after.status is Status.offline):
 			await bot.send_message(bot.log, after.name + ' connected')
@@ -37,7 +36,7 @@ async def on_member_update(before, after):
 
 @bot.event
 async def on_voice_state_update(before, after):
-	"""Logs when users join and leave a voice channel"""
+	"""Log the users that join and leave a voice channel."""
 	voice_role = discord.utils.get(bot.server.roles, name = 'voice')
 
 	if (before.voice.voice_channel is not None) & (after.voice.voice_channel is None):
@@ -54,12 +53,12 @@ async def on_voice_state_update(before, after):
 
 @bot.command()
 async def info():
-	"""Displays Github link"""
+	"""Display the Github link."""
 	await bot.say('https://github.com/adrianau/Gideon')
 
 @bot.command()
 async def choose(*choices : str):
-	"""Randomly chooses from given choices"""
+	"""Random a choice from the given arguments."""
 	if choices:
 		answer = random.choice(choices)
 		chance = '{0:.0f}%'.format(choices.count(answer) / len(choices) * 100)
@@ -69,7 +68,7 @@ async def choose(*choices : str):
 
 @bot.command()
 async def seen(user):
-	"""Outputs when the user last appeared online on the server"""
+	"""Output when a user last connected to the server."""
 	member = member_from_alias(user)
 	if member is None:
 		await bot.say('User not found')
@@ -83,7 +82,7 @@ async def seen(user):
 
 @bot.command(pass_context = True)
 async def addAlias(context, alias):
-	"""Adds an alias/nickname associated to the caller"""
+	"""Add an alias/nickname associated to the caller."""
 	author = context.message.author
 	update_file('aliases.json', alias.lower(), author.id)
 
@@ -92,7 +91,8 @@ async def addAlias(context, alias):
 #================================================================================
 
 @bot.command(pass_context = True)
-async def setAlias(context, user, alias):
+async def setAlias(context, alias, user):
+	"""Set an alias for a given user (string)."""
 	author = context.message.author
 	if is_admin(author):
 		member = member_from_alias(user)
@@ -105,12 +105,14 @@ async def setAlias(context, user, alias):
 #================================================================================
 
 def update_aliases():
+	"""Update the aliases file with all the default member names and sort it."""
 	for member in bot.server.members:
 		update_file('aliases.json', (member.name).lower(), member.id)
 
 	json_sort_value('aliases.json')
 
 async def update_roles():
+	"""Update all the member roles managed by the bot."""
 	for role in bot_roles:
 		role = discord.utils.get(bot.server.roles, name = role)
 
@@ -122,10 +124,11 @@ async def update_roles():
 					await bot.remove_roles(member, role)
 
 def update_seen(member, time):
+	"""Update a member seen with the (current) time."""
 	update_file('seen.json', member.id, str(time))
 
 def format_time(dt):
-	"""Formats a datetime string like: 15 May 2017 at 9:01PM"""
+	"""Format a datetime string like: 15 May 2017 at 9:01PM."""
 	dto = datetime.strptime(dt, '%Y-%m-%d %H:%M:%S.%f')
 	date = dto.strftime('%a %d %b %Y')
 	time = dto.strftime('%I:%M%p').lstrip('0')
@@ -133,7 +136,7 @@ def format_time(dt):
 	return date + ' at ' + time
 
 def member_from_alias(alias):
-	"""Retrieves a member object from a given alias"""
+	"""Return a member object from a given alias."""
 	id = find(alias.lower(), 'aliases.json')
 	if id:
 		return bot.server.get_member(id)
@@ -141,14 +144,14 @@ def member_from_alias(alias):
 		return None
 
 def is_admin(member):
-	"""Checks if a member object has admin privileges"""
+	"""Return whether a member has admin privileges."""
 	if member.server_permissions.administrator:
 		return True
 	else:
 		return False
 
 def json_sort_value(file):
-	"""Sorts JSON by values"""
+	"""Sort and update a JSON by its values."""
 	with open(file, 'r') as f:
 		data = json.load(f)
 		ordered_items = sorted(data.items(), key = lambda item: item[1])
@@ -163,7 +166,7 @@ def json_sort_value(file):
 #================================================================================
 
 async def init_bot():
-	"""Initialises files and necessary setup"""
+	"""Initialise files and necessary setup for the bot."""
 	bot.server = list(bot.connection._servers.values())[0]
 	bot.log = discord.utils.get(bot.server.channels, name = 'log')
 	init_files()
@@ -180,7 +183,7 @@ def init_files():
 				json.dump({}, f, indent = 4)
 
 def update_file(file, key, value):
-	"""Updates a file with a new key/value pair"""
+	"""Update a file with a new key/value pair."""
 	with open(file, 'r') as f:
 		data = json.load(f)
 		data[key] = value
@@ -190,7 +193,7 @@ def update_file(file, key, value):
 			json.dump(data, f, indent = 4)
 
 def find(key, file):
-	"""Returns value of a key in a file"""
+	"""Return the value of a key in a file."""
 	with open(file, 'r') as f:
 		data = json.load(f)
 		found = True if key in data else False
