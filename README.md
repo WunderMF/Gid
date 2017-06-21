@@ -19,6 +19,12 @@ Check when a user was last online (by their username or nickname):
 - `!seen Barry` | Barry was last seen at 8:00pm on Tue 7 Oct 2014
 
 
+### Countdown
+Sends countdown messages, defaulting at 3 and capped at 5 (to prevent spam):
+- `!countdown` | 3 2 1 Go
+- `!countdown 5` | 5 4 3 2 1 Go 
+
+
 ### Choose
 Randomly chooses an item from a list of given inputs:
 - `!choose Batman Superman Flash` | Flash (33%)

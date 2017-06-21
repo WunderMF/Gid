@@ -90,6 +90,25 @@ async def addAlias(context, alias):
 	author = context.message.author
 	update_file('aliases.json', alias.lower(), author.id)
 
+@bot.command()
+async def countdown(num = '3'):
+	"""Send countdown messages defaulting to 3."""
+	if num.isdigit():
+		num = int(num)
+
+		if num > 5:
+			await bot.say('Countdown limited to maximum of 5')
+			return
+
+		voice_text = discord.utils.get(bot.server.channels, name = 'voice')
+		
+		for i in range (num, 0, -1):
+			await bot.send_message(voice_text, i, tts= True)
+			time.sleep(1)
+
+		await bot.send_message(voice_text, 'Go', tts= True)
+	else:
+		await bot.say('Invalid input')
 #================================================================================
 # Admin commands
 #================================================================================
