@@ -1,12 +1,12 @@
 # Gideon
-C# Discord bot 'Gideon' rewritten in Python using the Discord.py API wrapper.
-Maintained by Adrian and Matt.
+Discord bot 'Gideon' written in Python using the Discord.py API wrapper.
 
 ## Features
-- Notifies when a user comes online or goes offline.
-- Notifies when a user connects or disconnects from a voice channel.
+- Notifies when a user connects or disconnects from the server.
+- Notifies when a user joins or leaves a voice channel.
 - Logs all the notifications in a separate channel to avoid spam.
 - Dynamic @Voice role to mention all users only in voice chat.
+- Ability to add aliases to use in commands.
 
 ## Commands
 
@@ -23,6 +23,22 @@ Check when a user was last online (by their username or nickname):
 Randomly chooses an item from a list of given inputs:
 - `!choose Batman Superman Flash` | Flash (33%)
 
+
+### AddAlias
+Adds an alias associated to your user for use in commands:
+- `!addAlias Batman` | Bruce adds 'Batman' as an alias
+- `!seen Batman` now yields the same result as `!seen Bruce`
+
+
+## Admin
+
+### SetAlias
+Sets an alias for a user.
+- `!setAlias Batman Bruce` | Adds the alias 'Batman' for Bruce
+- `!seen Batman` now yields the same result as `!seen Bruce`
+
+
+## Upcoming
 
 ### VoteMute
 - `!votemute Mxyzptlk` | Calls a vote to server mute/unmute a user in a voice channel

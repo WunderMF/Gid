@@ -4,12 +4,14 @@ import random
 import time
 import json
 import os
+from collections import OrderedDict
 from discord.ext import commands
 from datetime import datetime
 from discord import Status
 from pprint import pprint
 
-bot = commands.Bot(command_prefix = '.')
+
+bot = commands.Bot(command_prefix = '!')
 bot_files = ['seen.json', 'aliases.json']
 bot_roles = ['voice']
 
@@ -68,7 +70,7 @@ async def choose(*choices : str):
 @bot.command()
 async def seen(user):
 	"""Outputs when the user last appeared online on the server"""
-	member = member_from_alias(user, bot.server)
+	member = member_from_alias(user)
 	if member is None:
 		await bot.say('User not found')
 		return
@@ -79,21 +81,48 @@ async def seen(user):
 	else:
 		await bot.say(member.name + ' not seen yet')
 
+@bot.command(pass_context = True)
+async def addAlias(context, alias):
+	"""Adds an alias/nickname associated to the caller"""
+	author = context.message.author
+	update_file('aliases.json', alias.lower(), author.id)
+
+#================================================================================
+# Admin commands
+#================================================================================
+
+@bot.command(pass_context = True)
+async def setAlias(context, user, alias):
+	author = context.message.author
+	if is_admin(author):
+		member = member_from_alias(user)
+		update_file('aliases.json', alias.lower(), member.id)
+	else:
+		await bot.say('Insufficient privileges')
+
 #================================================================================
 # Utility functions
 #================================================================================
 
+def update_aliases():
+	for member in bot.server.members:
+		update_file('aliases.json', (member.name).lower(), member.id)
+
+	json_sort_value('aliases.json')
+
+async def update_roles():
+	for role in bot_roles:
+		role = discord.utils.get(bot.server.roles, name = role)
+
+		if role.name == 'voice':
+			for member in bot.server.members:
+				if member.voice.voice_channel:
+					await bot.add_roles(member, role)
+				elif role in member.roles:
+					await bot.remove_roles(member, role)
+
 def update_seen(member, time):
 	update_file('seen.json', member.id, str(time))
-
-async def update_role(role):
-	"""Updates roles with newest members"""
-	if role.name == 'voice':
-		for member in bot.server.members:
-			if member.voice.voice_channel:
-				await bot.add_roles(member, role)
-			elif role in member.roles:
-				await bot.remove_roles(member, role)
 
 def format_time(dt):
 	"""Formats a datetime string like: 15 May 2017 at 9:01PM"""
@@ -103,13 +132,31 @@ def format_time(dt):
 
 	return date + ' at ' + time
 
-def member_from_alias(alias, server):
+def member_from_alias(alias):
 	"""Retrieves a member object from a given alias"""
 	id = find(alias.lower(), 'aliases.json')
 	if id:
 		return bot.server.get_member(id)
 	else:
 		return None
+
+def is_admin(member):
+	"""Checks if a member object has admin privileges"""
+	if member.server_permissions.administrator:
+		return True
+	else:
+		return False
+
+def json_sort_value(file):
+	"""Sorts JSON by values"""
+	with open(file, 'r') as f:
+		data = json.load(f)
+		ordered_items = sorted(data.items(), key = lambda item: item[1])
+		ordered_dict = OrderedDict(ordered_items)
+
+		os.remove(file)
+		with open (file, 'w') as f:
+			json.dump(ordered_dict, f, indent = 4)
 
 #================================================================================
 # File management
@@ -119,7 +166,11 @@ async def init_bot():
 	"""Initialises files and necessary setup"""
 	bot.server = list(bot.connection._servers.values())[0]
 	bot.log = discord.utils.get(bot.server.channels, name = 'log')
+	init_files()
+	update_aliases()
+	await update_roles()
 
+def init_files():
 	for file in bot_files:
 		if os.path.isfile(file):
 			print(file + ' found!')
@@ -127,10 +178,6 @@ async def init_bot():
 			print(file + ' not found')
 			with open(file, 'w') as f:
 				json.dump({}, f, indent = 4)
-
-	for role in bot_roles:
-		role = discord.utils.get(bot.server.roles, name = role)
-		await update_role(role)
 
 def update_file(file, key, value):
 	"""Updates a file with a new key/value pair"""
