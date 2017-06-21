@@ -70,15 +70,19 @@ async def choose(*choices : str):
 async def seen(user):
 	"""Output when a user last connected to the server."""
 	member = member_from_alias(user)
-	if member is None:
-		await bot.say('User not found')
-		return
 
-	seen_time = find(member.id, 'seen.json')
-	if seen_time:
-		await bot.say(member.name + ' was last seen on ' + format_time(seen_time))
+	if member:
+		if (member.status is not Status.offline):
+			await bot.say(member.name + ' is currently online')
+			return
+
+		seen_time = find(member.id, 'seen.json')
+		if seen_time:
+			await bot.say(member.name + ' was last seen on ' + format_time(seen_time))
+		else:
+			await bot.say(member.name + ' not seen yet')
 	else:
-		await bot.say(member.name + ' not seen yet')
+		await bot.say('User does not exist')
 
 @bot.command(pass_context = True)
 async def addAlias(context, alias):
