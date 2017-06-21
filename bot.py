@@ -85,7 +85,7 @@ async def seen(user):
 		await bot.say('User does not exist')
 
 @bot.command(pass_context = True)
-async def addAlias(context, alias):
+async def addalias(context, alias):
 	"""Add an alias/nickname associated to the caller."""
 	author = context.message.author
 	update_file('aliases.json', alias.lower(), author.id)
@@ -101,7 +101,7 @@ async def countdown(num = '3'):
 			return
 
 		voice_text = discord.utils.get(bot.server.channels, name = 'voice')
-		
+
 		for i in range (num, 0, -1):
 			await bot.send_message(voice_text, i, tts= True)
 			time.sleep(1)
@@ -109,16 +109,30 @@ async def countdown(num = '3'):
 		await bot.send_message(voice_text, 'Go', tts= True)
 	else:
 		await bot.say('Invalid input')
+
+@bot.command()
+async def viewrole(role_str):
+	"""Display all members in a given role."""
+	role = discord.utils.get(bot.server.roles, name = role_str.lower())
+	text = '`` \n'
+
+	for member in bot.server.members:
+		if role in member.roles:
+			text += member.name + '\n'
+
+	text += '``'
+	await bot.say(text)
+
 #================================================================================
 # Admin commands
 #================================================================================
 
 @bot.command(pass_context = True)
-async def setAlias(context, alias, user):
-	"""Set an alias for a given user (string)."""
+async def setalias(context, alias, user_str):
+	"""Set an alias for a given user."""
 	author = context.message.author
 	if is_admin(author):
-		member = member_from_alias(user)
+		member = member_from_alias(user_str)
 		update_file('aliases.json', alias.lower(), member.id)
 	else:
 		await bot.say('Insufficient privileges')
@@ -197,6 +211,7 @@ async def init_bot():
 	await update_roles()
 
 def init_files():
+	"""Creates necessary files if they don't exist"""
 	for file in bot_files:
 		if os.path.isfile(file):
 			print(file + ' found!')
