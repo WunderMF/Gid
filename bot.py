@@ -13,6 +13,7 @@ from pprint import pprint
 bot = commands.Bot(command_prefix = '!')
 bot_files = ['seen.json', 'aliases.json']
 bot_roles = ['voice']
+game_roles = ['league', 'pubg']
 
 #================================================================================
 # Events
@@ -110,6 +111,34 @@ async def countdown(num = '3'):
 	else:
 		await bot.say('Invalid input')
 
+@bot.command(pass_context = True)
+async def join(context, role_str):
+	"""Enable caller to join a game role."""
+	if role_str in game_roles:
+		role = discord.utils.get(bot.server.roles, name = role_str.lower())
+		author = context.message.author
+		await bot.add_roles(author, role)
+		await bot.say(author.name + ' has been added to the ' + role.name + ' group')
+	else:
+		await bot.say('Invalid request')
+
+@bot.command(pass_context = True)
+async def leave(context, role_str):
+	"""Enable caller to leave a role."""
+	role = discord.utils.get(bot.server.roles, name = role_str.lower())
+
+	if not role:
+		await bot.say('Invalid role')
+		return
+
+	author = context.message.author
+
+	if role in author.roles:
+		await bot.remove_roles(author, role)
+		await bot.say(author.name + ' has left the ' + role.name + ' group')
+	else:
+		await bot.say('Invalid role')
+
 @bot.command()
 async def viewrole(role_str):
 	"""Display all members in a given role."""
@@ -136,7 +165,7 @@ async def setalias(context, alias, user_str):
 		update_file('aliases.json', alias.lower(), member.id)
 	else:
 		await bot.say('Insufficient privileges')
-
+		
 #================================================================================
 # Utility functions
 #================================================================================
