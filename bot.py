@@ -29,9 +29,9 @@ async def on_member_update(before, after):
 	"""Log the users that connect and disconnect from the server."""
 	if not after.bot:
 		if (before.status is Status.offline) & (after.status is not Status.offline):
-			await bot.send_message(bot.log, after.name + ' connected')
+			await bot.send_message(bot.log, b(after.name + ' connected'))
 		elif (before.status is not Status.offline) & (after.status is Status.offline):
-			await bot.send_message(bot.log, after.name + ' disconnected')
+			await bot.send_message(bot.log, b(after.name + ' disconnected'))
 			update_seen(after, datetime.now())
 
 @bot.event
@@ -40,11 +40,11 @@ async def on_voice_state_update(before, after):
 	voice_role = discord.utils.get(bot.server.roles, name = 'voice')
 
 	if (before.voice.voice_channel is not None) & (after.voice.voice_channel is None):
-		await bot.send_message(bot.log, after.name + ' left ' + before.voice.voice_channel.name)	
+		await bot.send_message(bot.log, b(after.name + ' left ' + before.voice.voice_channel.name))	
 		await bot.remove_roles(after, voice_role)
 
 	elif (before.voice.voice_channel != after.voice.voice_channel):
-		await bot.send_message(bot.log, after.name + ' joined ' + after.voice.voice_channel.name)
+		await bot.send_message(bot.log, b(after.name + ' joined ' + after.voice.voice_channel.name))
 		await bot.add_roles(after, voice_role)
 
 @bot.event
@@ -61,7 +61,7 @@ async def on_member_update(before, after):
 @bot.command()
 async def info():
 	"""Display the Github link."""
-	await bot.say('https://github.com/adrianau/Gideon')
+	await bot.say(b('https://github.com/adrianau/Gideon'))
 
 @bot.command()
 async def choose(*choices : str):
@@ -69,9 +69,9 @@ async def choose(*choices : str):
 	if choices:
 		answer = random.choice(choices)
 		chance = '{0:.0f}%'.format(choices.count(answer) / len(choices) * 100)
-		await bot.say(answer + ' (' + chance + ')')
+		await bot.say(b(answer + ' (' + chance + ')'))
 	else:
-		await bot.say('No input given')
+		await bot.say(b('No input given'))
 
 @bot.command()
 async def seen(user):
@@ -80,16 +80,16 @@ async def seen(user):
 
 	if member:
 		if (member.status is not Status.offline):
-			await bot.say(member.name + ' is currently online')
+			await bot.say(b(member.name + ' is currently online'))
 			return
 
 		seen_time = find(member.id, 'seen.json')
 		if seen_time:
-			await bot.say(member.name + ' was last seen on ' + format_time(seen_time))
+			await bot.say(b(member.name + ' was last seen on ' + format_time(seen_time)))
 		else:
-			await bot.say(member.name + ' not seen yet')
+			await bot.say(b(member.name + ' not seen yet'))
 	else:
-		await bot.say('User does not exist')
+		await bot.say(b('User does not exist'))
 
 @bot.command(pass_context = True)
 async def addalias(context, alias):
@@ -99,11 +99,11 @@ async def addalias(context, alias):
 
 	if (member_id is not None):
 		member = discord.utils.get(bot.server.members, id = member_id)
-		await bot.say('Alias ' +  '\'' + alias + '\'' + ' already exists for ' + member.name)
+		await bot.say(b('Alias ' +  '\'' + alias + '\'' + ' already exists for ' + member.name))
 		return
 
 	update_file('aliases.json', alias.lower(), author.id)
-	await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + author.name)
+	await bot.say(b('Alias ' + '\'' + alias + '\'' + ' has been set for ' + author.name))
 
 @bot.command(pass_context = True)
 async def addsummoner(context, summoner):
@@ -125,7 +125,7 @@ async def addsummoner(context, summoner):
 	with open ('league.json', 'w') as f:
 		json.dump(data, f, indent = 4)
 
-	await bot.say(author.name + ' has added summoner ' + summoner)
+	await bot.say(b(author.name + ' has added summoner ' + summoner))
 
 @bot.command()
 async def countdown(num = '3'):
@@ -134,7 +134,7 @@ async def countdown(num = '3'):
 		num = int(num)
 
 		if num > 10:
-			await bot.say('Countdown capped to 10')
+			await bot.say(b('Countdown capped to 10'))
 			return
 
 		voice_text = discord.utils.get(bot.server.channels, name = 'voice')
@@ -144,10 +144,10 @@ async def countdown(num = '3'):
 			message += str(i) + '. '
 
 		message += 'Go.'
-		await bot.send_message(voice_text, message, tts= True)
+		await bot.send_message(voice_text, b(message), tts= True)
 
 	else:
-		await bot.say('Invalid input')
+		await bot.say(b('Invalid input'))
 
 @bot.command(pass_context = True)
 async def join(context, role_str):
@@ -156,9 +156,9 @@ async def join(context, role_str):
 		role = discord.utils.get(bot.server.roles, name = role_str.lower())
 		author = context.message.author
 		await bot.add_roles(author, role)
-		await bot.say(author.name + ' has been added to the ' + role.name + ' group')
+		await bot.say(b(author.name + ' has been added to the ' + role.name + ' group'))
 	else:
-		await bot.say('Invalid role')
+		await bot.say(b('Invalid role'))
 
 @bot.command(pass_context = True)
 async def leave(context, role_str):
@@ -166,29 +166,27 @@ async def leave(context, role_str):
 	role = discord.utils.get(bot.server.roles, name = role_str.lower())
 
 	if not role:
-		await bot.say('Invalid role')
+		await bot.say(b('Invalid role'))
 		return
 
 	author = context.message.author
 
 	if role in author.roles:
 		await bot.remove_roles(author, role)
-		await bot.say(author.name + ' has left the ' + role.name + ' group')
+		await bot.say(b(author.name + ' has left the ' + role.name + ' group'))
 	else:
-		await bot.say('Invalid role')
+		await bot.say(b('Invalid role'))
 
 @bot.command()
 async def viewrole(role_str):
 	"""Display all members in a given role."""
 	role = discord.utils.get(bot.server.roles, name = role_str.lower())
-	text = '`` \n'
 
 	for member in bot.server.members:
 		if role in member.roles:
 			text += member.name + '\n'
 
-	text += '``'
-	await bot.say(text)
+	await bot.say('```' + text + '```')
 
 #================================================================================
 # Admin commands
@@ -203,15 +201,15 @@ async def setalias(context, alias, user_str):
 
 		if (member_id is not None):
 			member = discord.utils.get(bot.server.members, id = member_id)
-			await bot.say('Alias ' +  '\'' + alias + '\'' + ' already exists for ' + member.name)
+			await bot.say(b('Alias ' +  '\'' + alias + '\'' + ' already exists for ' + member.name))
 			return
 
 		member = member_from_alias(user_str)
 
 		update_file('aliases.json', alias.lower(), member.id)
-		await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + member.name)
+		await bot.say(b('Alias ' + '\'' + alias + '\'' + ' has been set for ' + member.name))
 	else:
-		await bot.say('Insufficient privileges')
+		await bot.say(b('Insufficient privileges'))
 
 @bot.command(pass_context = True)
 async def setsummoner(context, summoner, alias):
@@ -235,9 +233,9 @@ async def setsummoner(context, summoner, alias):
 		with open ('league.json', 'w') as f:
 			json.dump(data, f, indent = 4)
 
-		await bot.say('Added summoner ' + summoner + ' for ' + member.name)
+		await bot.say(b('Added summoner ' + summoner + ' for ' + member.name))
 	else:
-		await bot.say('Insufficient privileges')
+		await bot.say(b('Insufficient privileges'))
 
 #================================================================================
 # Utility functions
@@ -321,8 +319,13 @@ async def get_league_game(member):
 					if response.status_code == 200:
 						await bot.send_message(member, 'http://www.lolnexus.com/EUW/search?name=' + list(obj.keys())[0] + '&region=EUW')
 						# debugging
-						await bot.send_message(bot.log, 'Messaged ' + member.name + ' with ' + 'http://www.lolnexus.com/EUW/search?name=' + list(obj.keys())[0] + '&region=EUW')
+						test_ch = discord.utils.get(bot.server.channels, name = 'test')
+						await bot.send_message(test_ch, b('Messaged ' + member.name + ' with ') + 'http://www.lolnexus.com/EUW/search?name=' + list(obj.keys())[0] + '&region=EUW')
 						return
+
+def b(msg):
+	"""Envelop the message in backticks."""
+	return '`' + msg + '`'
 
 #================================================================================
 # File management
