@@ -47,6 +47,13 @@ async def on_voice_state_update(before, after):
 		await bot.send_message(bot.log, after.name + ' joined ' + after.voice.voice_channel.name)
 		await bot.add_roles(after, voice_role)
 
+@bot.event
+async def on_member_update(before, after):
+	if (after.game):
+		if (after.game.name == 'Google Chrome'):
+			print (after.name + ' is playing League!')
+			get_league_game(after)
+
 #================================================================================
 # User commands
 #================================================================================
@@ -97,13 +104,6 @@ async def addalias(context, alias):
 
 	update_file('aliases.json', alias.lower(), author.id)
 	await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + author.name)
-
-def get_summoner_id(summoner):
-	if '+' in summoner:
-		summoner = summoner.replace('+', '%20')
-
-	data = requests.get('https://euw1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summoner + '?api_key=' + config.lapi).json()
-	return data['id']
 
 @bot.command(pass_context = True)
 async def addsummoner(context, summoner):
@@ -300,6 +300,36 @@ def json_sort_value(file):
 		with open (file, 'w') as f:
 			json.dump(ordered_dict, f, indent = 4)
 
+def get_summoner_id(summoner):
+	"""Return summoner ID from summoner name."""
+	if '+' in summoner:
+		summoner = summoner.replace('+', '%20')
+
+	data = requests.get('https://euw1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summoner + '?api_key=' + config.lapi).json()
+	return data['id']
+
+def get_league_game(member):
+	with open ('league.json', 'r') as f:
+			data = json.load(f)
+
+			if member.id in data:
+				id_list = []
+
+				for obj in data[member.id]:
+					id_list.append(list(obj.values())[0])
+				print(id_list)
+
+				#for id in id_list:
+				#	response = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + id + '?api_key=' + config.lapi)
+				#	print(response.status_code)
+				response = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + str(52204978) + '?api_key=' + config.lapi)
+				print('should succeed:')
+				print(response.status_code)
+				response2 = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + str(36147400) + '?api_key=' + config.lapi)
+				print('should fail:')
+				print(response2.status_code)
+			else:
+				return
 #================================================================================
 # File management
 #================================================================================
