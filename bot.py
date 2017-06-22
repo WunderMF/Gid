@@ -10,7 +10,7 @@ from datetime import datetime
 from discord import Status
 from pprint import pprint
 
-bot = commands.Bot(command_prefix = '!')
+bot = commands.Bot(command_prefix = '~')
 bot_files = ['seen.json', 'aliases.json']
 bot_roles = ['voice']
 game_roles = ['league', 'pubg']
@@ -100,21 +100,23 @@ async def addalias(context, alias):
 
 @bot.command()
 async def countdown(num = '3'):
-	"""Send countdown messages defaulting to 3."""
+	"""Send a tts countdown defaulting to 3 and capped at 10."""
 	if num.isdigit():
 		num = int(num)
 
-		if num > 5:
-			await bot.say('Countdown limited to maximum of 5')
+		if num > 10:
+			await bot.say('Countdown capped to 10')
 			return
 
 		voice_text = discord.utils.get(bot.server.channels, name = 'voice')
+		message = ''
 
 		for i in range (num, 0, -1):
-			await bot.send_message(voice_text, i, tts= True)
-			time.sleep(1)
+			message += str(i) + '. '
 
-		await bot.send_message(voice_text, 'Go', tts= True)
+		message += 'Go.'
+		await bot.send_message(voice_text, message, tts= True)
+
 	else:
 		await bot.say('Invalid input')
 
