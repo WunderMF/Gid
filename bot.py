@@ -50,9 +50,9 @@ async def on_voice_state_update(before, after):
 @bot.event
 async def on_member_update(before, after):
 	if (after.game):
-		if (after.game.name == 'Google Chrome'):
+		if (after.game.name == 'League of Legends'):
 			print (after.name + ' is playing League!')
-			get_league_game(after)
+			await get_league_game(after)
 
 #================================================================================
 # User commands
@@ -308,28 +308,22 @@ def get_summoner_id(summoner):
 	data = requests.get('https://euw1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summoner + '?api_key=' + config.lapi).json()
 	return data['id']
 
-def get_league_game(member):
+async def get_league_game(member):
+	"""Retrieve and message lolnexus link"""
 	with open ('league.json', 'r') as f:
 			data = json.load(f)
 
 			if member.id in data:
-				id_list = []
-
 				for obj in data[member.id]:
-					id_list.append(list(obj.values())[0])
-				print(id_list)
+					id = list(obj.values())[0]
+					response = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + str(id) + '?api_key=' + config.lapi)
 
-				#for id in id_list:
-				#	response = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + id + '?api_key=' + config.lapi)
-				#	print(response.status_code)
-				response = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + str(52204978) + '?api_key=' + config.lapi)
-				print('should succeed:')
-				print(response.status_code)
-				response2 = requests.get('https://euw1.api.riotgames.com/lol/spectator/v3/active-games/by-summoner/' + str(36147400) + '?api_key=' + config.lapi)
-				print('should fail:')
-				print(response2.status_code)
-			else:
-				return
+					if response.status_code == 200:
+						await bot.send_message(member, 'http://www.lolnexus.com/EUW/search?name=' + list(obj.keys())[0] + '&region=EUW')
+						# debugging
+						await bot.send_message(bot.log, 'Messaged ' + member.name + ' with ' + 'http://www.lolnexus.com/EUW/search?name=' + list(obj.keys())[0] + '&region=EUW')
+						return
+
 #================================================================================
 # File management
 #================================================================================
