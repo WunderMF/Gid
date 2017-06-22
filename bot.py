@@ -1,7 +1,7 @@
 import discord
 import config
+import requests
 import random
-import time
 import json
 import os
 from collections import OrderedDict
@@ -10,7 +10,7 @@ from datetime import datetime
 from discord import Status
 from pprint import pprint
 
-bot = commands.Bot(command_prefix = '~')
+bot = commands.Bot(command_prefix = '.')
 bot_files = ['seen.json', 'aliases.json']
 bot_roles = ['voice']
 game_roles = ['league', 'pubg']
@@ -98,6 +98,35 @@ async def addalias(context, alias):
 	update_file('aliases.json', alias.lower(), author.id)
 	await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + author.name)
 
+def get_summoner_id(summoner):
+	if '+' in summoner:
+		summoner = summoner.replace('+', '%20')
+
+	data = requests.get('https://euw1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summoner + '?api_key=' + config.lapi).json()
+	return data['id']
+
+@bot.command(pass_context = True)
+async def addsummoner(context, summoner):
+	"""Add a league summoner associated to the caller."""
+	author = context.message.author
+
+	obj = { summoner: get_summoner_id(summoner) }
+
+	with open ('league.json', 'r') as f:
+		data = json.load(f)
+
+		if author.id in data:
+			if obj not in data[author.id]:
+				data[author.id].append(obj)
+		else:
+			data[author.id] = [obj]
+
+	os.remove('league.json')
+	with open ('league.json', 'w') as f:
+		json.dump(data, f, indent = 4)
+
+	await bot.say(author.name + ' has added summoner ' + summoner)
+
 @bot.command()
 async def countdown(num = '3'):
 	"""Send a tts countdown defaulting to 3 and capped at 10."""
@@ -181,6 +210,32 @@ async def setalias(context, alias, user_str):
 
 		update_file('aliases.json', alias.lower(), member.id)
 		await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + member.name)
+	else:
+		await bot.say('Insufficient privileges')
+
+@bot.command(pass_context = True)
+async def setsummoner(context, summoner, alias):
+	"""Set a league summoner for a user."""
+	author = context.message.author
+
+	if is_admin(author):
+		obj = { summoner: get_summoner_id(summoner)}
+		member = member_from_alias(alias)
+
+		with open ('league.json', 'r') as f:
+			data = json.load(f)
+
+			if member.id in data:
+				if obj not in data[member.id]:
+					data[member.id].append(obj)
+			else:
+				data[member.id] = [obj]
+
+		os.remove('league.json')
+		with open ('league.json', 'w') as f:
+			json.dump(data, f, indent = 4)
+
+		await bot.say('Added summoner ' + summoner + ' for ' + member.name)
 	else:
 		await bot.say('Insufficient privileges')
 
