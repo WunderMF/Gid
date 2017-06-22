@@ -28,12 +28,11 @@ async def on_ready():
 async def on_member_update(before, after):
 	"""Log the users that connect and disconnect from the server."""
 	if not after.bot:
-		if (before.status is not Status.offline) & (after.status is Status.offline):
+		if (before.status is Status.offline) & (after.status is not Status.offline):
 			await bot.send_message(bot.log, after.name + ' connected')
-			update_seen(after, datetime.now())
-
-		elif (before.status is Status.offline) & (after.status is not Status.offline):
+		elif (before.status is not Status.offline) & (after.status is Status.offline):
 			await bot.send_message(bot.log, after.name + ' disconnected')
+			update_seen(after, datetime.now())
 
 @bot.event
 async def on_voice_state_update(before, after):
@@ -89,7 +88,15 @@ async def seen(user):
 async def addalias(context, alias):
 	"""Add an alias/nickname associated to the caller."""
 	author = context.message.author
+	member_id = find(alias, 'aliases.json')
+
+	if (member_id is not None):
+		member = discord.utils.get(bot.server.members, id = member_id)
+		await bot.say('Alias ' +  '\'' + alias + '\'' + ' already exists for ' + member.name)
+		return
+
 	update_file('aliases.json', alias.lower(), author.id)
+	await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + author.name)
 
 @bot.command()
 async def countdown(num = '3'):
@@ -120,7 +127,7 @@ async def join(context, role_str):
 		await bot.add_roles(author, role)
 		await bot.say(author.name + ' has been added to the ' + role.name + ' group')
 	else:
-		await bot.say('Invalid request')
+		await bot.say('Invalid role')
 
 @bot.command(pass_context = True)
 async def leave(context, role_str):
@@ -161,11 +168,20 @@ async def setalias(context, alias, user_str):
 	"""Set an alias for a given user."""
 	author = context.message.author
 	if is_admin(author):
+		member_id = find(alias, 'aliases.json')
+
+		if (member_id is not None):
+			member = discord.utils.get(bot.server.members, id = member_id)
+			await bot.say('Alias ' +  '\'' + alias + '\'' + ' already exists for ' + member.name)
+			return
+
 		member = member_from_alias(user_str)
+
 		update_file('aliases.json', alias.lower(), member.id)
+		await bot.say('Alias ' + '\'' + alias + '\'' + ' has been set for ' + member.name)
 	else:
 		await bot.say('Insufficient privileges')
-		
+
 #================================================================================
 # Utility functions
 #================================================================================
