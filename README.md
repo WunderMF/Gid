@@ -20,9 +20,9 @@ Check when a user was last online (by their username or nickname):
 
 
 ### countdown
-Sends countdown messages, defaulting at 3 and capped at 5 (to prevent spam):
-- `!countdown` | 3 2 1 Go
-- `!countdown 5` | 5 4 3 2 1 Go 
+Creates a TTS countdown, defaulting at 3 and capped at 10. Must be in #voice text channel to hear it:
+- `!countdown` | 3. 2. 1. Go.
+- `!countdown 5` | 5. 4. 3. 2. 1. Go. 
 
 
 ### choose
